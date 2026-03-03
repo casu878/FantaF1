@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>FANTA F1 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --red:#E10600;--redd:#9a0400;
+  --bg:#080808;--s1:#111;--s2:#191919;--s3:#232323;--border:#282828;
+  --t1:#f0f0f0;--t2:#999;--t3:#555;
+  --green:#00d47e;--yellow:#ffd700;--blue:#3b9eff;--purple:#b44fff;--orange:#ff6b00;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;overflow-x:hidden}
+.hidden{display:none!important}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--s1)}::-webkit-scrollbar-thumb{background:var(--red);border-radius:2px}
+
+/* SPLASH */
+#splash{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.splash-logo{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:72px;letter-spacing:-3px;line-height:.85;text-align:center}
+.splash-logo span{color:var(--red)}
+.splash-sub{font-size:10px;letter-spacing:4px;color:var(--t3);text-transform:uppercase;text-align:center}
+.splash-spin{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;margin-top:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* AUTH */
+#auth{min-height:100vh;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;background:radial-gradient(ellipse 110% 55% at 50% 0%,#1c0000,#080808 60%)}
+.logo{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:clamp(60px,14vw,90px);letter-spacing:-3px;line-height:.85;text-align:center}
+.logo span{color:var(--red)}
+.logo-sub{font-size:11px;letter-spacing:4px;color:var(--t3);text-transform:uppercase;text-align:center;margin:8px 0 36px}
+.acard{width:100%;max-width:380px;background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:26px}
+.atabs{display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--border);margin-bottom:20px}
+.atab{flex:1;padding:10px;background:var(--s1);border:none;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:var(--t3);transition:all .2s}
+.atab.on{background:var(--red);color:#fff}
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--t3);margin-bottom:6px}
+.fi{width:100%;padding:11px 14px;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--t1);font-size:15px;font-family:'Barlow',sans-serif;outline:none;transition:border-color .15s}
+.fi:focus{border-color:var(--red)}
+.fi-sel{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23666' d='M5 6L0 0h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.fi-sel option{background:#1a1a1a}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:12px 20px;border-radius:8px;border:none;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;letter-spacing:1px;text-transform:uppercase;transition:all .15s;white-space:nowrap}
+.btn-r{background:var(--red);color:#fff}.btn-r:hover{background:var(--redd)}
+.btn-g{background:var(--s3);color:var(--t1);border:1px solid var(--border)}.btn-g:hover{border-color:var(--red);color:var(--red)}
+.btn-ok{background:#04180c;color:var(--green);border:1px solid #0a3020}
+.btn-no{background:#180404;color:#ff7070;border:1px solid #380f0f}
+.btn-sm{padding:7px 12px;font-size:12px}
+.btn-w{width:100%}
+.errmsg{font-size:12px;margin-top:8px;text-align:center;min-height:16px}
+.errmsg.err{color:var(--red)}.errmsg.ok{color:var(--green)}
+
+/* Email confirm box */
+.email-confirm-box{background:#041a0c;border:1px solid #0a4020;border-radius:12px;padding:20px;text-align:center;margin-top:8px}
+.email-confirm-box .big-emoji{font-size:48px;margin-bottom:12px}
+.email-confirm-box h3{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;color:var(--green);margin-bottom:8px}
+.email-confirm-box p{font-size:12px;color:var(--t2);line-height:1.5;margin-bottom:12px}
+.email-confirm-box .hint{font-size:11px;color:var(--t3);background:var(--s2);border-radius:6px;padding:8px;margin-top:8px}
+
+/* APP */
+#app{display:none;flex-direction:column;min-height:100vh}
+.rstripe{height:3px;background:linear-gradient(90deg,var(--red),#ff4444,var(--red))}
+.topbar{position:sticky;top:0;z-index:100;background:rgba(17,17,17,.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 14px}
+.tblogo{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:23px;letter-spacing:-1px}
+.tblogo span{color:var(--red)}
+.tbr{display:flex;align-items:center;gap:9px}
+.av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;color:#fff;cursor:pointer;transition:all .2s;flex-shrink:0}
+.ldot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pd 1.5s infinite}
+@keyframes pd{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* NAV */
+.bnav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(17,17,17,.97);backdrop-filter:blur(12px);border-top:1px solid var(--border);display:flex;height:56px}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;border:none;background:none;color:var(--t3);font-size:9px;font-family:'Barlow',sans-serif;font-weight:700;letter-spacing:.5px;text-transform:uppercase;transition:color .2s;padding:0}
+.ni svg{width:19px;height:19px;stroke-width:2.2}
+.ni.on{color:var(--red)}
+
+/* PAGES */
+.page{display:none;padding:13px 13px 76px;max-width:640px;margin:0 auto;width:100%}
+.page.on{display:block}
+
+/* TYPOGRAPHY */
+.stitle{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--t3);margin-bottom:9px;margin-top:16px}
+.stitle:first-child{margin-top:0}
+.ctitle{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px;letter-spacing:.5px;text-transform:uppercase}
+
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:15px;margin-bottom:9px}
+
+/* COUNTDOWN */
+.cdcard{background:linear-gradient(135deg,#130404,var(--s1));border:1px solid #3a1010;border-radius:14px;padding:18px;margin-bottom:11px;position:relative;overflow:hidden}
+.cdcard::before{content:'F1';position:absolute;right:-8px;top:-10px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:100px;color:var(--red);opacity:.04;pointer-events:none;line-height:1}
+.cd-flag{font-size:26px;margin-bottom:3px}
+.cd-name{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;text-transform:uppercase;letter-spacing:.5px;line-height:1.1}
+.cd-sub{font-size:10px;color:var(--t2);margin:4px 0 12px}
+.cd-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.cdu{background:var(--s2);border-radius:8px;padding:9px 3px;text-align:center}
+.cdn{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:28px;color:var(--red);line-height:1}
+.cdl{font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;margin-top:1px}
+.sbadge{display:inline-flex;align-items:center;gap:4px;background:#1a0a30;border:1px solid #5a2a90;color:var(--purple);font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:10px;letter-spacing:1px;padding:2px 7px;border-radius:4px;margin-top:4px}
+
+/* LEADERBOARD */
+.lbrow{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:8px;background:var(--s2);margin-bottom:5px;border:1px solid transparent;transition:border-color .2s}
+.lbrow.me{border-color:var(--red)!important}
+.lbrow.top1{background:linear-gradient(90deg,#190600,var(--s2))}
+.lbpos{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:16px;width:22px;text-align:center;color:var(--t3);flex-shrink:0}
+.lbpos.g{color:var(--yellow)}.lbpos.s{color:#ccc}.lbpos.b{color:#cd7f32}
+.lbname{flex:1;font-weight:600;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lbpts{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:19px;color:var(--red);line-height:1;flex-shrink:0}
+.lbptsl{font-size:10px;color:var(--t3);text-align:right}
+
+/* FANTASY TEAM */
+.budget-bar{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:11px}
+.budget-track{height:8px;background:var(--s2);border-radius:4px;margin-top:8px;overflow:hidden}
+.budget-fill{height:100%;border-radius:4px;background:var(--green);transition:width .4s,background .4s}
+.budget-fill.warn{background:var(--yellow)}
+.budget-fill.over{background:var(--red)}
+.driver-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:11px}
+.driver-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.driver-card:hover{border-color:var(--t3)}
+.driver-card.selected{border-color:var(--red);background:#130303}
+.driver-card.locked{opacity:.4;cursor:not-allowed}
+.driver-card.locked::after{content:'🚫';position:absolute;top:8px;right:8px;font-size:14px}
+.driver-num{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:28px;opacity:.15;position:absolute;right:6px;top:2px;line-height:1}
+.driver-name{font-weight:700;font-size:13px;margin-bottom:2px;line-height:1.2}
+.driver-team{font-size:10px;color:var(--t2)}
+.driver-price{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;color:var(--yellow);margin-top:6px}
+.driver-stripe{height:3px;margin:-12px -12px 10px;border-radius:10px 10px 0 0}
+.team-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:11px}
+.team-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:12px;cursor:pointer;transition:all .2s;text-align:center}
+.team-card:hover{border-color:var(--t3)}
+.team-card.selected{border-color:var(--red);background:#130303}
+.team-name-big{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;text-transform:uppercase;margin-bottom:4px}
+.myteam-display{background:linear-gradient(135deg,#130404,var(--s1));border:1px solid #3a1010;border-radius:12px;padding:14px;margin-bottom:11px}
+.myteam-slots{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.myteam-slot{background:var(--s2);border-radius:9px;padding:10px;text-align:center;border:1px solid var(--border)}
+.myteam-slot.filled{border-color:var(--red)}
+.slot-label{font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px}
+.slot-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:13px;line-height:1.2}
+
+/* PREDICT */
+.psec{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px}
+.psectit{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-bottom:11px;display:flex;align-items:center;gap:6px}
+.prow{margin-bottom:9px}
+.prow:last-child{margin-bottom:0}
+.plabel{font-size:11px;color:var(--t2);font-weight:600;margin-bottom:5px;letter-spacing:.3px}
+.tog{display:flex;gap:6px}
+.tb{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--t3);cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;text-align:center;transition:all .15s}
+.tb.on{border-color:var(--red);background:#1a0606;color:var(--red)}
+.tb.on.yes{border-color:var(--green);background:#041a0c;color:var(--green)}
+.numinput{display:flex;align-items:center;gap:12px}
+.nb{width:40px;height:40px;border-radius:8px;border:1px solid var(--border);background:var(--s2);color:var(--t1);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-weight:300}
+.nb:hover{border-color:var(--red);color:var(--red)}
+.nv{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:30px;min-width:40px;text-align:center;color:var(--red)}
+.subbar{position:sticky;bottom:56px;background:linear-gradient(to top,var(--bg) 70%,transparent);padding:14px 0 4px}
+
+/* LIVE */
+.livehdr{background:linear-gradient(135deg,#00100a,var(--s1));border:1px solid #003818;border-radius:14px;padding:15px;margin-bottom:11px}
+.livebar{display:flex;align-items:center;gap:7px;margin-bottom:10px;flex-wrap:wrap}
+.livebadge{display:flex;align-items:center;gap:4px;background:var(--green);color:#000;padding:4px 9px;border-radius:4px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:12px;letter-spacing:1px}
+.stsbadge{padding:4px 9px;border-radius:4px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;letter-spacing:1px}
+.stsG{background:#001a0a;color:var(--green)}.stsY{background:#1a1600;color:var(--yellow)}.stsR{background:#1a0000;color:var(--red)}
+.livcells{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:10px}
+.livcell{background:var(--s2);border-radius:8px;padding:9px;text-align:center}
+.livcell-v{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px}
+.livcell-l{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px}
+.posrow{display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--s2);border-radius:8px;margin-bottom:4px;border-left:3px solid transparent;transition:all .3s}
+.posrow.p1{border-left-color:var(--yellow)}.posrow.p2{border-left-color:#ccc}.posrow.p3{border-left-color:#cd7f32}
+.posrow.myd{background:#130303;border-left-color:var(--red)}
+.posnum{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;width:18px;color:var(--t3);flex-shrink:0}
+.posname{font-weight:700;font-size:13px}
+.posteam{font-size:10px;color:var(--t2)}
+
+/* CALENDAR */
+.weekbox{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:13px;margin-bottom:8px}
+.weekbox.next{border-color:var(--red)}
+.weekbox.past{opacity:.5}
+.wname{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;text-transform:uppercase;display:flex;align-items:center;gap:7px;margin-bottom:8px;flex-wrap:wrap}
+.sessrow{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)}
+.sessrow:last-child{border-bottom:none}
+.sessname{font-size:12px;font-weight:600}
+.sesstime{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px}
+.sesstime.past{color:var(--t3)}.sesstime.live{color:var(--green)}.sesstime.future{color:var(--blue)}
+
+/* RACE CARDS */
+.rcard{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--s2);border-radius:9px;margin-bottom:6px;border:1px solid var(--border);transition:all .18s}
+
+/* ADMIN */
+.agrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}
+.atile{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;transition:all .18s;text-align:center}
+.atile:hover{border-color:var(--red);background:#110505}
+.atile-ico{font-size:24px;margin-bottom:5px}
+.atile-lbl{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;letter-spacing:1px;text-transform:uppercase}
+
+/* MODAL */
+.moverlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.9);display:flex;align-items:flex-end;justify-content:center}
+.modal{background:var(--s1);border-radius:16px 16px 0 0;padding:22px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;border-top:3px solid var(--red);animation:sup .28s cubic-bezier(.16,1,.3,1)}
+@keyframes sup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.mtitle{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:19px;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;line-height:1.2}
+.mclose{float:right;cursor:pointer;color:var(--t3);font-size:20px;line-height:1}
+
+/* TOAST */
+.toast{position:fixed;bottom:68px;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 18px;z-index:500;font-size:13px;font-weight:700;white-space:nowrap;animation:tin .2s ease;box-shadow:0 8px 24px rgba(0,0,0,.7)}
+.toast.ok{border-color:var(--green);color:var(--green)}.toast.err{border-color:var(--red);color:var(--red)}
+@keyframes tin{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* STATS */
+.srow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+.srow:last-child{border-bottom:none}
+.sl{color:var(--t2);font-size:12px}.sv{font-weight:700;font-size:13px}
+
+/* PROFILE */
+.phdr{text-align:center;padding:16px 0 10px}
+.pav{width:66px;height:66px;border-radius:50%;margin:0 auto 9px;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:26px;border:3px solid var(--red)}
+.pname{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px}
+.prole{font-size:10px;color:var(--red);font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+
+/* STATUS BANNER */
+.status-banner{padding:10px 14px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sb-info{background:#0a1a2a;border:1px solid #1a3a5a;color:var(--blue)}
+.sb-warn{background:#1a1000;border:1px solid #3a2800;color:var(--yellow)}
+.sb-ok{background:#041a0c;border:1px solid #0a3020;color:var(--green)}
+.sb-err{background:#1a0404;border:1px solid #3a1010;color:#ff7070}
+
+/* CODE BLOCK */
+.code-block{background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:10px;font-family:monospace;font-size:11px;color:var(--green);margin-top:6px;overflow-x:auto;white-space:pre}
+
+@media(min-width:640px){
+  .bnav{left:50%;right:auto;width:640px;transform:translateX(-50%);border-radius:12px 12px 0 0}
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-logo">FANTA<br><span>F1</span></div>
+  <div class="splash-sub">Lega Privata · Stagione 2026</div>
+  <div class="splash-spin"></div>
+</div>
+
+<!-- AUTH -->
+<div id="auth">
+  <div class="logo">FANTA<br><span>F1</span></div>
+  <div class="logo-sub">Lega Privata · Stagione 2026</div>
+  <div class="acard">
+    <div class="atabs">
+      <button class="atab on" onclick="swAuth('login')">Accedi</button>
+      <button class="atab" onclick="swAuth('reg')">Registrati</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="lform">
+      <div class="fg"><label>Email</label><input class="fi" type="email" id="lemail" placeholder="nome@email.com" autocomplete="email"></div>
+      <div class="fg"><label>Password</label><input class="fi" type="password" id="lpass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div id="lerr" class="errmsg err"></div>
+      <button class="btn btn-r btn-w" id="login-btn" onclick="doLogin()" style="margin-top:6px">Entra →</button>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="rform" class="hidden">
+      <div id="reg-inputs">
+        <div class="fg"><label>Nickname</label><input class="fi" type="text" id="rnick" placeholder="Il tuo nickname in lega" maxlength="20" autocomplete="off"></div>
+        <div class="fg"><label>Email</label><input class="fi" type="email" id="remail" placeholder="nome@email.com" autocomplete="email"></div>
+        <div class="fg"><label>Password</label><input class="fi" type="password" id="rpass" placeholder="Minimo 6 caratteri" autocomplete="new-password"></div>
+        <div class="fg"><label>🔑 Codice Lega</label><input class="fi" type="text" id="rcode" placeholder="Chiedi all'admin"></div>
+        <div id="rerr" class="errmsg err"></div>
+        <button class="btn btn-r btn-w" id="reg-btn" onclick="doRegister()" style="margin-top:6px">Crea Account →</button>
+      </div>
+      <!-- Email confirm message (shown after signup if email confirm required) -->
+      <div id="email-confirm-msg" class="email-confirm-box hidden">
+        <div class="big-emoji">📧</div>
+        <h3>Controlla la tua email!</h3>
+        <p>Abbiamo inviato un link di conferma a:<br><strong id="confirm-email-shown" style="color:var(--t1)"></strong></p>
+        <p style="color:var(--t3);font-size:11px">Clicca il link per completare la registrazione.<br>Poi torna qui e accedi.</p>
+        <div class="hint">💡 Non trovi l'email? Controlla la cartella <strong>Spam/Junk</strong>.<br>Oppure chiedi all'admin di disabilitare la conferma email su Supabase.</div>
+        <button class="btn btn-g btn-w" onclick="swAuth('login')" style="margin-top:14px">Vai al Login →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="rstripe"></div>
+  <div class="topbar">
+    <div class="tblogo">FANTA<span>F1</span> <span style="font-size:13px;color:var(--t3);font-weight:400">2026</span></div>
+    <div class="tbr">
+      <div class="ldot hidden" id="ldot"></div>
+      <div class="av" id="uav" title="Profilo" onclick="navTo('profile')">?</div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div class="page on" id="pg-home">
+    <div id="cdbox"></div>
+    <div class="stitle">🏆 Classifica Lega</div>
+    <div id="home-lb"></div>
+    <button class="btn btn-g btn-w" style="margin-top:8px" onclick="navTo('stand')">Vedi classifica completa →</button>
+  </div>
+
+  <!-- FANTASY TEAM -->
+  <div class="page" id="pg-fantasy">
+    <div id="fantasy-content"></div>
+  </div>
+
+  <!-- PRONOSTICI -->
+  <div class="page" id="pg-predict">
+    <div id="predict-content"></div>
+  </div>
+
+  <!-- LIVE -->
+  <div class="page" id="pg-live">
+    <div class="livehdr">
+      <div class="livebar">
+        <div class="livebadge">⬤ LIVE</div>
+        <div class="stsbadge stsG" id="trkstatus">🟢 Green Flag</div>
+        <div style="margin-left:auto;font-size:10px;color:var(--t3)">⟳ <span id="sync-time">--:--</span></div>
+      </div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:36px;line-height:1">
+        Giro <span id="lapcur">—</span><span style="font-size:18px;color:var(--t2);font-weight:400">/<span id="laptot">—</span></span>
+      </div>
+      <div style="font-size:11px;color:var(--t2);margin-top:2px" id="live-racename">Nessuna gara in corso</div>
+      <div class="livcells">
+        <div class="livcell"><div class="livcell-v" id="lv-dnf">0</div><div class="livcell-l">Ritiri</div></div>
+        <div class="livcell"><div class="livcell-v" id="lv-sc" style="color:var(--yellow)">0</div><div class="livcell-l">Safety Car</div></div>
+        <div class="livcell"><div class="livcell-v" id="lv-rf" style="color:var(--red)">0</div><div class="livcell-l">Red Flag</div></div>
+      </div>
+    </div>
+    <div class="stitle">🏎️ Posizioni in Gara</div>
+    <div id="live-pos"></div>
+    <div class="stitle" style="margin-top:16px">🏆 Fanta Classifica Live</div>
+    <div id="live-fanta"></div>
+    <div style="margin-top:10px;padding:9px;background:var(--s2);border-radius:8px;font-size:10px;color:var(--t3);text-align:center;border:1px solid var(--border)">
+      Fonte: <strong style="color:var(--t2)">OpenF1 (openf1.org)</strong> · Aggiornamento ogni 10s<br>
+      <span id="api-state">In connessione...</span>
+    </div>
+  </div>
+
+  <!-- CLASSIFICA -->
+  <div class="page" id="pg-stand">
+    <div style="display:flex;gap:6px;margin-bottom:12px">
+      <button class="btn btn-r btn-sm" id="stab-gen" onclick="showStab('gen')">Generale</button>
+      <button class="btn btn-g btn-sm" id="stab-gp" onclick="showStab('gp')">Per GP</button>
+      <button class="btn btn-g btn-sm" id="stab-stats" onclick="showStab('stats')">Stats</button>
+    </div>
+    <div id="stand-content"></div>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="page" id="pg-admin">
+    <div class="stitle">⚙️ Pannello Admin</div>
+    <div class="agrid">
+      <div class="atile" onclick="openMod('scores')"><div class="atile-ico">🧮</div><div class="atile-lbl">Punteggi</div></div>
+      <div class="atile" onclick="openMod('users')"><div class="atile-ico">👥</div><div class="atile-lbl">Utenti</div></div>
+      <div class="atile" onclick="openMod('results')"><div class="atile-ico">🔄</div><div class="atile-lbl">Risultati GP</div></div>
+      <div class="atile" onclick="openMod('bonus')"><div class="atile-ico">⭐</div><div class="atile-lbl">Bonus</div></div>
+    </div>
+    <div class="status-banner sb-info">ℹ️ Codice lega: <strong id="admin-code">—</strong> — condividilo con i tuoi amici!</div>
+    <div class="status-banner sb-warn">
+      ⚠️ <strong>Fix registrazione:</strong> Su Supabase → Authentication → Email Templates → disabilita "Confirm email" per far entrare subito i tuoi amici senza conferma email.
+    </div>
+    <details style="margin-bottom:10px">
+      <summary style="cursor:pointer;font-size:11px;font-weight:700;color:var(--yellow);padding:8px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">📋 SQL Supabase — Clicca per vedere le tabelle da creare</summary>
+      <div class="code-block" style="margin-top:6px;font-size:10px">-- Incolla nel SQL Editor di Supabase (una volta sola):
+
+create table profiles (
+  id uuid primary key references auth.users(id),
+  nickname text unique not null,
+  role text default 'user',
+  avatar text default '🏎️',
+  color text default '#E10600',
+  total_pts integer default 0,
+  gps_done integer default 0
+);
+
+create table predictions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references profiles(id),
+  race_id text not null,
+  p1 text, p2 text, p3 text,
+  best_team text, worst_team text,
+  revelation text, fastest text,
+  sc boolean, rf boolean,
+  dnf_count integer default 0,
+  sprint_win text,
+  saved_at timestamptz default now(),
+  unique(user_id, race_id)
+);
+
+create table fantasy_teams (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references profiles(id),
+  race_id text not null,
+  driver1 text, driver2 text, team1 text,
+  budget_used integer default 0,
+  saved_at timestamptz default now(),
+  unique(user_id, race_id)
+);
+
+create table race_results (
+  race_id text primary key,
+  p1 text, p2 text, p3 text,
+  best_team text, worst_team text,
+  revelation text, fastest text,
+  sc boolean default false,
+  rf boolean default false,
+  dnf_count integer default 0,
+  sprint_win text,
+  source text default 'manual',
+  fetched_at timestamptz default now()
+);
+
+create table bonuses (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  pts integer default 5,
+  active boolean default true
+);
+
+create table admin_log (
+  id uuid primary key default gen_random_uuid(),
+  action text, by_user text,
+  ts timestamptz default now()
+);
+
+-- RLS
+alter table profiles enable row level security;
+alter table predictions enable row level security;
+alter table fantasy_teams enable row level security;
+alter table race_results enable row level security;
+alter table bonuses enable row level security;
+alter table admin_log enable row level security;
+
+create policy "read profiles" on profiles for select using (true);
+create policy "insert own profile" on profiles for insert with check (auth.uid() = id);
+create policy "update own profile" on profiles for update using (auth.uid() = id);
+create policy "read predictions" on predictions for select using (true);
+create policy "manage own predictions" on predictions for all using (auth.uid() = user_id);
+create policy "read fantasy" on fantasy_teams for select using (true);
+create policy "manage own fantasy" on fantasy_teams for all using (auth.uid() = user_id);
+create policy "read results" on race_results for select using (true);
+create policy "admin manage results" on race_results for all using (true) with check (true);
+create policy "read bonuses" on bonuses for select using (true);
+create policy "admin manage bonuses" on bonuses for all using (true) with check (true);
+create policy "admin log" on admin_log for all using (true) with check (true);
+
+create or replace function increment_pts(uid uuid, add_pts int, add_gps int)
+returns void language sql as $$
+  update profiles set total_pts = total_pts + add_pts, gps_done = gps_done + add_gps where id = uid;
+$$;
+
+insert into bonuses (name, pts, active) values
+  ('Pole Position corretta',6,true),
+  ('Sorpassi guadagnati (per pos)',1,true),
+  ('Pit stop più veloce (team)',5,false),
+  ('Safety Car Virtuale (VSC)',4,false);</div>
+    </details>
+    <div class="stitle">📋 Log Attività</div>
+    <div id="adminlog"><div style="color:var(--t3);font-size:12px">Nessuna attività.</div></div>
+    <button class="btn btn-g btn-sm" onclick="navTo('home')" style="margin-top:12px">← Home</button>
+  </div>
+
+  <!-- PROFILO -->
+  <div class="page" id="pg-profile">
+    <div class="phdr">
+      <div class="pav" id="pav">?</div>
+      <div class="pname" id="pname">—</div>
+      <div class="prole" id="prole">Pilota</div>
+    </div>
+    <div class="card"><div class="ctitle" style="margin-bottom:11px">📊 Le Mie Statistiche</div><div id="pstats"></div></div>
+    <div id="padmin-btn"></div>
+    <div class="stitle">📜 Storico GP</div>
+    <div id="phist"></div>
+    <button class="btn btn-g btn-w" onclick="doLogout()" style="margin-top:14px">🚪 Esci</button>
+  </div>
+
+  <nav class="bnav">
+    <button class="ni on" id="ni-home" onclick="navTo('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home
+    </button>
+    <button class="ni" id="ni-fantasy" onclick="navTo('fantasy')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Team
+    </button>
+    <button class="ni" id="ni-predict" onclick="navTo('predict')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Pronostico
+    </button>
+    <button class="ni" id="ni-live" onclick="navTo('live')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg>Live
+    </button>
+    <button class="ni" id="ni-stand" onclick="navTo('stand')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Classifica
+    </button>
+    <button class="ni" id="ni-profile" onclick="navTo('profile')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profilo
+    </button>
+  </nav>
+</div>
+
+<!-- MODAL -->
+<div id="moverlay" class="moverlay hidden" onclick="if(event.target===this)closeMod()">
+  <div class="modal" id="mcontent"></div>
+</div>
+<div id="toasts"></div>
+
+<script>
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  FANTA F1 2026 — Full Production App                        ║
+// ║  Stack: Supabase (auth + DB) + OpenF1 API (live data)       ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+// ── ⚙️ CONFIG ──
+const SUPABASE_URL  = 'https://hxizbuomlguaodxvxtrq.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh4aXpidW9tbGd1YW9keHZ4dHJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MjMzMTgsImV4cCI6MjA4ODA5OTMxOH0.9pUzmWaZLqp7uCHUPopwmzqLWlRXh2inEvxTgObCPUM';
+const LEAGUE_CODE   = 'Elisex005';
+const BUDGET_TOTAL  = 100;
+// ─────────────────────────────────────────────────────────────────
+
+let sb, currentUser, currentProfile;
+let liveInterval = null;
+let _sc = null, _rf = null, _dnf = 0;
+let cdInterval = null;
+let currentStab = 'gen';
+
+// ══════════════════════════════════════════════
+//  DATI 2026
+// ══════════════════════════════════════════════
+
+const DRIVERS_2026 = [
+  {name:'Lando Norris',      num:1,  team:'McLaren',       tc:'FF8000', price:30},
+  {name:'Oscar Piastri',     num:81, team:'McLaren',       tc:'FF8000', price:26},
+  {name:'Charles Leclerc',   num:16, team:'Ferrari',       tc:'E8002D', price:28},
+  {name:'Lewis Hamilton',    num:44, team:'Ferrari',       tc:'E8002D', price:25},
+  {name:'George Russell',    num:63, team:'Mercedes',      tc:'27F4D2', price:22},
+  {name:'Kimi Antonelli',    num:12, team:'Mercedes',      tc:'27F4D2', price:14},
+  {name:'Max Verstappen',    num:3,  team:'Red Bull',      tc:'3671C6', price:32},
+  {name:'Isack Hadjar',      num:6,  team:'Red Bull',      tc:'3671C6', price:13},
+  {name:'Carlos Sainz',      num:55, team:'Williams',      tc:'64C4FF', price:18},
+  {name:'Alex Albon',        num:23, team:'Williams',      tc:'64C4FF', price:15},
+  {name:'Fernando Alonso',   num:14, team:'Aston Martin',  tc:'358C75', price:18},
+  {name:'Lance Stroll',      num:18, team:'Aston Martin',  tc:'358C75', price:11},
+  {name:'Pierre Gasly',      num:10, team:'Alpine',        tc:'FF87BC', price:14},
+  {name:'Franco Colapinto',  num:43, team:'Alpine',        tc:'FF87BC', price:12},
+  {name:'Liam Lawson',       num:30, team:'Racing Bulls',  tc:'6692FF', price:13},
+  {name:'Arvid Lindblad',    num:41, team:'Racing Bulls',  tc:'6692FF', price:10},
+  {name:'Esteban Ocon',      num:31, team:'Haas',          tc:'B6BABD', price:12},
+  {name:'Oliver Bearman',    num:87, team:'Haas',          tc:'B6BABD', price:11},
+  {name:'Nico Hülkenberg',   num:27, team:'Audi',          tc:'52E252', price:14},
+  {name:'Gabriel Bortoleto', num:5,  team:'Audi',          tc:'52E252', price:12},
+  {name:'Sergio Pérez',      num:11, team:'Cadillac',      tc:'ffffff', price:12},
+  {name:'Valtteri Bottas',   num:77, team:'Cadillac',      tc:'ffffff', price:10},
+];
+
+const TEAMS_2026 = [
+  {name:'McLaren',      tc:'FF8000', price:32},
+  {name:'Ferrari',      tc:'E8002D', price:30},
+  {name:'Red Bull',     tc:'3671C6', price:28},
+  {name:'Mercedes',     tc:'27F4D2', price:25},
+  {name:'Williams',     tc:'64C4FF', price:18},
+  {name:'Aston Martin', tc:'358C75', price:16},
+  {name:'Alpine',       tc:'FF87BC', price:15},
+  {name:'Racing Bulls', tc:'6692FF', price:14},
+  {name:'Haas',         tc:'B6BABD', price:13},
+  {name:'Audi',         tc:'52E252', price:14},
+  {name:'Cadillac',     tc:'ffffff', price:12},
+];
+
+const CALENDAR_2026 = [
+  {id:'r01',round:1, flag:'🇦🇺',name:"GP Australia",      circuit:'Albert Park, Melbourne',    sprint:false, sessions:{fp1:'2026-03-06T02:30Z',fp2:'2026-03-06T06:00Z',fp3:'2026-03-07T02:30Z',qual:'2026-03-07T06:00Z',race:'2026-03-08T04:00Z'}},
+  {id:'r02',round:2, flag:'🇨🇳',name:"GP Cina",           circuit:'Shanghai International Circuit', sprint:true, sessions:{fp1:'2026-03-13T03:30Z',sq:'2026-03-13T07:30Z',spr:'2026-03-14T03:00Z',qual:'2026-03-14T07:00Z',race:'2026-03-15T07:00Z'}},
+  {id:'r03',round:3, flag:'🇯🇵',name:"GP Giappone",       circuit:'Suzuka Circuit',             sprint:false, sessions:{fp1:'2026-03-27T02:30Z',fp2:'2026-03-27T06:00Z',fp3:'2026-03-28T03:30Z',qual:'2026-03-28T07:00Z',race:'2026-03-29T05:00Z'}},
+  {id:'r04',round:4, flag:'🇧🇭',name:"GP Bahrain",        circuit:'Sakhir',                     sprint:false, sessions:{fp1:'2026-04-10T12:30Z',fp2:'2026-04-10T16:00Z',fp3:'2026-04-11T12:30Z',qual:'2026-04-11T16:00Z',race:'2026-04-12T15:00Z'}},
+  {id:'r05',round:5, flag:'🇸🇦',name:"GP Arabia Saudita", circuit:'Jeddah Corniche Circuit',    sprint:false, sessions:{fp1:'2026-04-17T13:30Z',fp2:'2026-04-17T17:00Z',fp3:'2026-04-18T13:30Z',qual:'2026-04-18T17:00Z',race:'2026-04-19T17:00Z'}},
+  {id:'r06',round:6, flag:'🇺🇸',name:"GP Miami",          circuit:'Miami International Autodrome', sprint:true, sessions:{fp1:'2026-05-01T17:30Z',sq:'2026-05-01T21:30Z',spr:'2026-05-02T17:00Z',qual:'2026-05-02T21:00Z',race:'2026-05-03T19:00Z'}},
+  {id:'r07',round:7, flag:'🇨🇦',name:"GP Canada",         circuit:'Circuit Gilles Villeneuve',  sprint:true, sessions:{fp1:'2026-05-22T16:30Z',sq:'2026-05-22T20:30Z',spr:'2026-05-23T15:30Z',qual:'2026-05-23T19:30Z',race:'2026-05-24T18:00Z'}},
+  {id:'r08',round:8, flag:'🇲🇨',name:"GP Monaco",         circuit:'Circuit de Monaco',          sprint:false, sessions:{fp1:'2026-06-05T11:30Z',fp2:'2026-06-05T15:00Z',fp3:'2026-06-06T10:30Z',qual:'2026-06-06T14:00Z',race:'2026-06-07T13:00Z'}},
+  {id:'r09',round:9, flag:'🇪🇸',name:"GP Spagna",         circuit:'Circuit de Barcelona-Catalunya', sprint:false, sessions:{fp1:'2026-06-12T11:30Z',fp2:'2026-06-12T15:00Z',fp3:'2026-06-13T10:30Z',qual:'2026-06-13T14:00Z',race:'2026-06-14T13:00Z'}},
+  {id:'r10',round:10,flag:'🇦🇹',name:"GP Austria",        circuit:'Red Bull Ring, Spielberg',   sprint:false, sessions:{fp1:'2026-06-26T11:30Z',fp2:'2026-06-26T15:00Z',fp3:'2026-06-27T10:30Z',qual:'2026-06-27T14:00Z',race:'2026-06-28T13:00Z'}},
+  {id:'r11',round:11,flag:'🇬🇧',name:"GP Gran Bretagna",  circuit:'Silverstone Circuit',        sprint:true, sessions:{fp1:'2026-07-03T11:30Z',sq:'2026-07-03T15:30Z',spr:'2026-07-04T11:00Z',qual:'2026-07-04T15:00Z',race:'2026-07-05T14:00Z'}},
+  {id:'r12',round:12,flag:'🇧🇪',name:"GP Belgio",         circuit:'Circuit de Spa-Francorchamps', sprint:false, sessions:{fp1:'2026-07-17T11:30Z',fp2:'2026-07-17T15:00Z',fp3:'2026-07-18T10:30Z',qual:'2026-07-18T14:00Z',race:'2026-07-19T13:00Z'}},
+  {id:'r13',round:13,flag:'🇭🇺',name:"GP Ungheria",       circuit:'Hungaroring, Budapest',      sprint:false, sessions:{fp1:'2026-07-24T11:30Z',fp2:'2026-07-24T15:00Z',fp3:'2026-07-25T10:30Z',qual:'2026-07-25T14:00Z',race:'2026-07-26T13:00Z'}},
+  {id:'r14',round:14,flag:'🇳🇱',name:"GP Olanda",         circuit:'Circuit Zandvoort',          sprint:true, sessions:{fp1:'2026-08-21T10:30Z',sq:'2026-08-21T14:30Z',spr:'2026-08-22T10:00Z',qual:'2026-08-22T14:00Z',race:'2026-08-23T13:00Z'}},
+  {id:'r15',round:15,flag:'🇮🇹',name:"GP Italia",         circuit:'Autodromo di Monza',         sprint:false, sessions:{fp1:'2026-09-04T11:30Z',fp2:'2026-09-04T15:00Z',fp3:'2026-09-05T10:30Z',qual:'2026-09-05T14:00Z',race:'2026-09-06T13:00Z'}},
+  {id:'r16',round:16,flag:'🇪🇸',name:"GP Madrid",         circuit:'Madrid Street Circuit',      sprint:false, sessions:{fp1:'2026-09-11T11:30Z',fp2:'2026-09-11T15:00Z',fp3:'2026-09-12T10:30Z',qual:'2026-09-12T14:00Z',race:'2026-09-13T13:00Z'}},
+  {id:'r17',round:17,flag:'🇦🇿',name:"GP Azerbaigian",    circuit:'Baku City Circuit',          sprint:false, sessions:{fp1:'2026-09-25T07:30Z',fp2:'2026-09-25T11:00Z',fp3:'2026-09-26T07:30Z',qual:'2026-09-26T11:00Z',race:'2026-09-27T11:00Z'}},
+  {id:'r18',round:18,flag:'🇸🇬',name:"GP Singapore",      circuit:'Marina Bay Street Circuit',  sprint:true, sessions:{fp1:'2026-10-09T09:30Z',sq:'2026-10-09T13:30Z',spr:'2026-10-10T09:00Z',qual:'2026-10-10T13:00Z',race:'2026-10-11T12:00Z'}},
+  {id:'r19',round:19,flag:'🇺🇸',name:"GP USA (Austin)",   circuit:'Circuit of the Americas',    sprint:false, sessions:{fp1:'2026-10-23T17:30Z',fp2:'2026-10-23T21:00Z',fp3:'2026-10-24T17:30Z',qual:'2026-10-24T21:00Z',race:'2026-10-25T19:00Z'}},
+  {id:'r20',round:20,flag:'🇲🇽',name:"GP Messico",        circuit:'Autódromo Hermanos Rodriguez', sprint:false, sessions:{fp1:'2026-10-30T18:30Z',fp2:'2026-10-30T22:00Z',fp3:'2026-10-31T17:30Z',qual:'2026-10-31T21:00Z',race:'2026-11-01T20:00Z'}},
+  {id:'r21',round:21,flag:'🇧🇷',name:"GP Brasile",        circuit:'Autódromo Interlagos',       sprint:false, sessions:{fp1:'2026-11-06T14:30Z',fp2:'2026-11-06T18:00Z',fp3:'2026-11-07T13:30Z',qual:'2026-11-07T17:00Z',race:'2026-11-08T17:00Z'}},
+  {id:'r22',round:22,flag:'🇺🇸',name:"GP Las Vegas",      circuit:'Las Vegas Strip Circuit',    sprint:false, sessions:{fp1:'2026-11-20T04:30Z',fp2:'2026-11-20T08:00Z',fp3:'2026-11-21T04:00Z',qual:'2026-11-21T07:00Z',race:'2026-11-22T06:00Z'}},
+  {id:'r23',round:23,flag:'🇶🇦',name:"GP Qatar",          circuit:'Lusail International Circuit', sprint:false, sessions:{fp1:'2026-11-27T13:30Z',fp2:'2026-11-27T17:00Z',fp3:'2026-11-28T12:30Z',qual:'2026-11-28T16:00Z',race:'2026-11-29T15:00Z'}},
+  {id:'r24',round:24,flag:'🇦🇪',name:"GP Abu Dhabi",      circuit:'Yas Marina Circuit',         sprint:false, sessions:{fp1:'2026-12-04T09:30Z',fp2:'2026-12-04T13:00Z',fp3:'2026-12-05T10:30Z',qual:'2026-12-05T14:00Z',race:'2026-12-06T13:00Z'}},
+];
+
+const SESS_NAMES = {fp1:'FP1',fp2:'FP2',fp3:'FP3',sq:'Sprint Qual',spr:'Sprint Race',qual:'Qualifiche',race:'GARA'};
+const DEFAULT_SCORES = {p1:10,p2:8,p3:6,top3:5,bteam:8,wteam:8,sc:5,rf:7,dnf_exact:10,dnf_near:5,rev:10,fast:4};
+
+// ══════════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════════
+async function init() {
+  try {
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) {
+      await loadUserProfile(session.user);
+      showApp();
+    } else {
+      showAuth();
+    }
+    sb.auth.onAuthStateChange(async (event, sess) => {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && sess?.user) {
+        await loadUserProfile(sess.user);
+        showApp();
+      } else if (event === 'SIGNED_OUT') {
+        currentUser = null; currentProfile = null;
+        showAuth();
+      }
+    });
+  } catch(e) {
+    console.error('init error:', e);
+    showAuth();
+  }
+}
+
+function hideSplash() { document.getElementById('splash').style.display = 'none'; }
+function showAuth() {
+  hideSplash();
+  document.getElementById('auth').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+function showApp() {
+  hideSplash();
+  document.getElementById('auth').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('on'));
+  document.getElementById('pg-home').classList.add('on');
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('on'));
+  document.getElementById('ni-home').classList.add('on');
+  initApp().catch(e => console.error('initApp:', e));
+}
+
+async function loadUserProfile(user) {
+  currentUser = user;
+  const { data } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+  if (data) { currentProfile = data; return; }
+  const colors = ['#E10600','#3671C6','#27F4D2','#FF8000','#358C75','#FF87BC','#64C4FF','#B6BABD','#b44fff','#ffd700'];
+  const emojis = ['🏎️','⚡','🔥','🏆','⭐','🚀','💎','🎯','🦊','👑'];
+  const { count } = await sb.from('profiles').select('*',{count:'exact',head:true});
+  const idx = count || 0;
+  const meta = user.user_metadata || {};
+  const newP = {
+    id: user.id,
+    nickname: meta.nickname || user.email.split('@')[0],
+    role: idx === 0 ? 'admin' : (meta.role || 'user'),
+    avatar: meta.avatar || emojis[idx % emojis.length],
+    color: meta.color || colors[idx % colors.length],
+    total_pts: 0, gps_done: 0
+  };
+  const { data: created } = await sb.from('profiles').insert(newP).select().single();
+  currentProfile = created || newP;
+}
+
+// ══════════════════════════════════════════════
+//  AUTH UI
+// ══════════════════════════════════════════════
+function swAuth(t) {
+  document.querySelectorAll('.atab').forEach((el,i) => el.classList.toggle('on', i===(t==='login'?0:1)));
+  document.getElementById('lform').classList.toggle('hidden', t!=='login');
+  document.getElementById('rform').classList.toggle('hidden', t==='login');
+  // Reset email confirm message if switching
+  if (t === 'reg') {
+    document.getElementById('reg-inputs').classList.remove('hidden');
+    document.getElementById('email-confirm-msg').classList.add('hidden');
+  }
+}
+
+async function doLogin() {
+  const email = document.getElementById('lemail').value.trim();
+  const pass  = document.getElementById('lpass').value;
+  const err   = document.getElementById('lerr');
+  err.textContent = '';
+  if (!email || !pass) { err.textContent = '❌ Compila tutti i campi'; return; }
+  const btn = document.getElementById('login-btn');
+  btn.textContent = '...'; btn.disabled = true;
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  btn.textContent = 'Entra →'; btn.disabled = false;
+  if (error) {
+    if (error.message.toLowerCase().includes('email not confirmed')) {
+      err.textContent = '⚠️ Email non confermata. Controlla la tua casella email (anche Spam)!';
+    } else if (error.message.toLowerCase().includes('invalid login') || error.message.toLowerCase().includes('invalid credentials')) {
+      err.textContent = '❌ Email o password errati';
+    } else {
+      err.textContent = '❌ ' + error.message;
+    }
+  }
+}
+
+async function doRegister() {
+  const nick  = document.getElementById('rnick').value.trim().replace(/\s+/g,'_');
+  const email = document.getElementById('remail').value.trim();
+  const pass  = document.getElementById('rpass').value;
+  const code  = document.getElementById('rcode').value.trim();
+  const err   = document.getElementById('rerr');
+  err.textContent = ''; err.className = 'errmsg err';
+
+  // Validazione
+  if (nick.length < 3)       { err.textContent = '❌ Nickname minimo 3 caratteri'; return; }
+  if (nick.length > 20)      { err.textContent = '❌ Nickname massimo 20 caratteri'; return; }
+  if (!/^[a-zA-Z0-9_]+$/.test(nick)) { err.textContent = '❌ Nickname: solo lettere, numeri e _'; return; }
+  if (!email || !email.includes('@')) { err.textContent = '❌ Email non valida'; return; }
+  if (pass.length < 6)       { err.textContent = '❌ Password minimo 6 caratteri'; return; }
+  if (code !== LEAGUE_CODE)  { err.textContent = '❌ Codice lega errato — chiedilo all\'admin'; return; }
+
+  // Controlla nickname duplicato
+  const { data: ex } = await sb.from('profiles').select('id').eq('nickname', nick).maybeSingle();
+  if (ex) { err.textContent = '❌ Nickname già in uso'; return; }
+
+  const colors = ['#E10600','#3671C6','#27F4D2','#FF8000','#358C75','#FF87BC','#64C4FF','#B6BABD','#b44fff','#ffd700'];
+  const emojis = ['🏎️','⚡','🔥','🏆','⭐','🚀','💎','🎯','🦊','👑'];
+  const { count } = await sb.from('profiles').select('*',{count:'exact',head:true});
+  const idx = count || 0;
+  const profileData = {
+    nickname: nick,
+    role: idx === 0 ? 'admin' : 'user',
+    avatar: emojis[idx % emojis.length],
+    color: colors[idx % colors.length]
+  };
+
+  const btn = document.getElementById('reg-btn');
+  btn.textContent = '...'; btn.disabled = true;
+
+  const { data: authData, error: authErr } = await sb.auth.signUp({
+    email,
+    password: pass,
+    options: { data: profileData }
+  });
+
+  btn.textContent = 'Crea Account →'; btn.disabled = false;
+
+  if (authErr) {
+    // Gestione errori specifici
+    if (authErr.message.toLowerCase().includes('already registered') || authErr.message.toLowerCase().includes('user already')) {
+      err.textContent = '❌ Email già registrata — usa il login oppure recupera la password';
+    } else {
+      err.textContent = '❌ ' + authErr.message;
+    }
+    return;
+  }
+
+  // Caso 1: Supabase ha email confirm DISABILITATA → sessione immediata
+  if (authData.session || authData.user?.email_confirmed_at) {
+    try {
+      await sb.from('profiles').upsert({id: authData.user.id, ...profileData, total_pts:0, gps_done:0}, {onConflict:'id'});
+    } catch(e) { /* profile già creato da trigger */ }
+    showToast('✅ Benvenuto nella Fanta F1!', 'ok');
+    await loadUserProfile(authData.user);
+    showApp();
+    return;
+  }
+
+  // Caso 2: Supabase ha email confirm ABILITATA → mostra istruzioni
+  document.getElementById('reg-inputs').classList.add('hidden');
+  document.getElementById('confirm-email-shown').textContent = email;
+  document.getElementById('email-confirm-msg').classList.remove('hidden');
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+}
+
+// ══════════════════════════════════════════════
+//  APP INIT
+// ══════════════════════════════════════════════
+async function initApp() {
+  const av = document.getElementById('uav');
+  if (av && currentProfile) {
+    av.textContent = currentProfile.avatar || '🏎️';
+    av.style.background = currentProfile.color || 'var(--red)';
+  }
+  const ac = document.getElementById('admin-code');
+  if (ac) ac.textContent = LEAGUE_CODE;
+  await renderHome();
+  await renderStandings('gen');
+  await renderProfile();
+  await renderAdminLog();
+  startCountdown();
+}
+
+// ══════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════
+function navTo(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('on'));
+  document.getElementById('pg-'+p)?.classList.add('on');
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('on'));
+  document.getElementById('ni-'+p)?.classList.add('on');
+  if (p === 'fantasy')  renderFantasy();
+  if (p === 'predict')  renderPredict();
+  if (p === 'stand')    renderStandings('gen');
+  if (p === 'profile')  renderProfile();
+  if (p === 'live') { document.getElementById('ldot').classList.remove('hidden'); startLive(); }
+  else { document.getElementById('ldot').classList.add('hidden'); stopLive(); }
+}
+
+// ══════════════════════════════════════════════
+//  HOME
+// ══════════════════════════════════════════════
+function getNextRace() {
+  const now = Date.now();
+  return CALENDAR_2026.find(r => new Date(r.sessions.race).getTime() > now);
+}
+function getActiveRace() {
+  const now = Date.now();
+  return CALENDAR_2026.find(r => {
+    const s = new Date(r.sessions.race).getTime();
+    return now >= s && now <= s + 7200000;
+  });
+}
+
+async function renderHome() {
+  const next = getNextRace();
+  const cdbox = document.getElementById('cdbox');
+  if (next) {
+    cdbox.innerHTML = `
+      <div class="cdcard">
+        <div class="cd-flag">${next.flag}</div>
+        <div class="cd-name">R${next.round} · ${next.name}</div>
+        <div class="cd-sub">${next.circuit} · ${fmtIt(next.sessions.race)}${next.sprint?' · 🟣 Sprint':''}</div>
+        ${next.sprint ? '<div class="sbadge">🟣 SPRINT WEEKEND</div>' : ''}
+        <div class="cd-grid" style="margin-top:12px">
+          <div class="cdu"><div class="cdn" id="cdd">--</div><div class="cdl">Giorni</div></div>
+          <div class="cdu"><div class="cdn" id="cdh">--</div><div class="cdl">Ore</div></div>
+          <div class="cdu"><div class="cdn" id="cdm">--</div><div class="cdl">Min</div></div>
+          <div class="cdu"><div class="cdn" id="cds">--</div><div class="cdl">Sec</div></div>
+        </div>
+        <div style="display:flex;gap:7px;margin-top:12px">
+          <button class="btn btn-r" style="flex:1" onclick="navTo('fantasy')">🏎️ Scegli Team</button>
+          <button class="btn btn-g" style="flex:1" onclick="navTo('predict')">📝 Pronostico</button>
+        </div>
+      </div>`;
+    startCountdown();
+  } else {
+    cdbox.innerHTML = '<div class="cdcard"><div class="cd-name">🏁 Stagione 2026 conclusa</div></div>';
+  }
+  const { data: profiles } = await sb.from('profiles').select('*').order('total_pts',{ascending:false});
+  const me = currentProfile?.id;
+  document.getElementById('home-lb').innerHTML = (profiles||[]).slice(0,6).map((p,i) => `
+    <div class="lbrow${i===0?' top1':''}${p.id===me?' me':''}">
+      <div class="lbpos ${['g','s','b'][i]||''}">${['🥇','🥈','🥉'][i]||i+1}</div>
+      <div class="av" style="background:${p.color};width:26px;height:26px;font-size:12px;flex-shrink:0">${p.avatar}</div>
+      <div class="lbname">${p.nickname}${p.id===me?' <span style="color:var(--red);font-size:9px">(tu)</span>':''}</div>
+      <div><div class="lbpts">${p.total_pts}</div><div class="lbptsl">pts</div></div>
+    </div>`).join('') || '<div style="color:var(--t3);font-size:12px;text-align:center;padding:16px">Nessun giocatore ancora. Sei il primo!</div>';
+}
+
+function startCountdown() {
+  if (cdInterval) clearInterval(cdInterval);
+  function tick() {
+    const next = getNextRace();
+    if (!next) return;
+    const diff = new Date(next.sessions.race) - new Date();
+    if (diff <= 0) { clearInterval(cdInterval); return; }
+    const d = Math.floor(diff/86400000);
+    const h = Math.floor((diff%86400000)/3600000);
+    const m = Math.floor((diff%3600000)/60000);
+    const s = Math.floor((diff%60000)/1000);
+    const el = id => document.getElementById(id);
+    if (el('cdd')) el('cdd').textContent = String(d).padStart(2,'0');
+    if (el('cdh')) el('cdh').textContent = String(h).padStart(2,'0');
+    if (el('cdm')) el('cdm').textContent = String(m).padStart(2,'0');
+    if (el('cds')) el('cds').textContent = String(s).padStart(2,'0');
+  }
+  tick();
+  cdInterval = setInterval(tick, 1000);
+}
+
+// ══════════════════════════════════════════════
+//  FANTASY TEAM
+// ══════════════════════════════════════════════
+let fantState = { driver1: null, driver2: null, team1: null };
+
+async function renderFantasy() {
+  const next = getNextRace();
+  const el = document.getElementById('fantasy-content');
+  if (!next) { el.innerHTML = '<div class="status-banner sb-info">Nessun GP disponibile.</div>'; return; }
+
+  const { data: ex } = await sb.from('fantasy_teams').select('*').eq('user_id', currentUser.id).eq('race_id', next.id).maybeSingle();
+
+  let lockedDrivers = new Set();
+  const prevRace = CALENDAR_2026[next.round - 2];
+  if (prevRace) {
+    const { data: prevTeam } = await sb.from('fantasy_teams').select('driver1,driver2').eq('user_id', currentUser.id).eq('race_id', prevRace.id).maybeSingle();
+    if (prevTeam) {
+      if (prevTeam.driver1) lockedDrivers.add(prevTeam.driver1);
+      if (prevTeam.driver2) lockedDrivers.add(prevTeam.driver2);
+    }
+  }
+
+  fantState = {
+    driver1: ex?.driver1 || null,
+    driver2: ex?.driver2 || null,
+    team1: ex?.team1 || null,
+    locked: new Date(next.sessions.qual) < new Date()
+  };
+
+  renderFantasyUI(next, lockedDrivers, fantState.locked);
+}
+
+function renderFantasyUI(next, lockedDrivers, isLocked) {
+  const used = getBudgetUsed();
+  const remaining = BUDGET_TOTAL - used;
+  const pct = Math.min(100, (used/BUDGET_TOTAL)*100);
+  const fillClass = pct > 100 ? 'over' : pct > 80 ? 'warn' : '';
+
+  const el = document.getElementById('fantasy-content');
+  el.innerHTML = `
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;text-transform:uppercase;margin-bottom:10px">
+      ${next.flag} R${next.round} · ${next.name}
+    </div>
+    ${isLocked ? '<div class="status-banner sb-warn">⏰ Qualifiche iniziate — team bloccato per questo GP</div>' : ''}
+    ${lockedDrivers.size ? `<div class="status-banner sb-info">🚫 Piloti del GP precedente non selezionabili: <strong>${[...lockedDrivers].join(', ')}</strong></div>` : ''}
+
+    <div class="budget-bar">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:var(--t3)">💰 Budget</span>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;color:${remaining<0?'var(--red)':remaining<15?'var(--yellow)':'var(--green)'}">${remaining} <span style="font-size:12px;color:var(--t3)">/ ${BUDGET_TOTAL} cr</span></span>
+      </div>
+      <div class="budget-track"><div class="budget-fill ${fillClass}" style="width:${pct}%"></div></div>
+    </div>
+
+    <div class="myteam-display">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:12px;letter-spacing:2px;color:var(--t3);text-transform:uppercase;margin-bottom:10px">Il Mio Team</div>
+      <div class="myteam-slots">
+        ${makeSlot('🏎️ Pilota 1', fantState.driver1, DRIVERS_2026.find(d=>d.name===fantState.driver1))}
+        ${makeSlot('🏎️ Pilota 2', fantState.driver2, DRIVERS_2026.find(d=>d.name===fantState.driver2))}
+        ${makeTeamSlot('🏁 Scuderia', fantState.team1, TEAMS_2026.find(t=>t.name===fantState.team1))}
+      </div>
+    </div>
+
+    <div class="stitle">🏎️ Scegli i 2 Piloti</div>
+    <div class="driver-grid">
+      ${DRIVERS_2026.map(d => {
+        const isSelected = fantState.driver1 === d.name || fantState.driver2 === d.name;
+        const isLock = lockedDrivers.has(d.name) || isLocked;
+        return `<div class="driver-card${isSelected?' selected':''}${isLock?' locked':''}" onclick="${isLock?'':'selectDriver(\''+d.name+'\')'}">
+          <div class="driver-stripe" style="background:#${d.tc}"></div>
+          <div class="driver-num">${d.num}</div>
+          <div class="driver-name">${d.name}</div>
+          <div class="driver-team" style="color:#${d.tc}">${d.team}</div>
+          <div class="driver-price">💰 ${d.price} cr</div>
+          ${isSelected ? '<div style="position:absolute;top:8px;right:8px;font-size:14px">✅</div>' : ''}
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="stitle">🏁 Scegli la Scuderia</div>
+    <div class="team-grid">
+      ${TEAMS_2026.map(t => {
+        const isSelected = fantState.team1 === t.name;
+        return `<div class="team-card${isSelected?' selected':''}${isLocked?' locked':''}" onclick="${isLocked?'':'selectTeam(\''+t.name+'\')'}">
+          <div style="height:4px;background:#${t.tc};border-radius:4px 4px 0 0;margin:-12px -12px 10px"></div>
+          <div class="team-name-big" style="color:#${t.tc}">${t.name}</div>
+          <div style="font-size:10px;color:var(--t2)">💰 ${t.price} cr</div>
+          ${isSelected ? '<div style="font-size:18px;margin-top:4px">✅</div>' : ''}
+        </div>`;
+      }).join('')}
+    </div>
+
+    ${!isLocked ? `
+    <div class="subbar">
+      <button class="btn btn-r btn-w" onclick="saveFantasyTeam('${next.id}')" style="font-size:16px;padding:14px">
+        ${(ex || fantState.driver1) ? '✏️ Aggiorna Team' : '💾 Salva Team'}
+      </button>
+    </div>` : ''}
+  `;
+}
+
+function makeSlot(label, name, driver) {
+  return `<div class="myteam-slot${name?' filled':''}">
+    <div class="slot-label">${label}</div>
+    <div class="slot-val" style="color:${driver?'#'+driver.tc:'var(--t3)'}">${name || '—'}</div>
+    ${driver ? `<div style="font-size:9px;color:var(--t3);margin-top:2px">💰 ${driver.price} cr</div>` : ''}
+  </div>`;
+}
+function makeTeamSlot(label, name, team) {
+  return `<div class="myteam-slot${name?' filled':''}">
+    <div class="slot-label">${label}</div>
+    <div class="slot-val" style="color:${team?'#'+team.tc:'var(--t3)'}">${name || '—'}</div>
+    ${team ? `<div style="font-size:9px;color:var(--t3);margin-top:2px">💰 ${team.price} cr</div>` : ''}
+  </div>`;
+}
+
+function getBudgetUsed() {
+  let total = 0;
+  if (fantState.driver1) { const d = DRIVERS_2026.find(x=>x.name===fantState.driver1); if(d) total+=d.price; }
+  if (fantState.driver2) { const d = DRIVERS_2026.find(x=>x.name===fantState.driver2); if(d) total+=d.price; }
+  if (fantState.team1)   { const t = TEAMS_2026.find(x=>x.name===fantState.team1);   if(t) total+=t.price; }
+  return total;
+}
+
+function selectDriver(name) {
+  if (fantState.driver1 === name) { fantState.driver1 = null; }
+  else if (fantState.driver2 === name) { fantState.driver2 = null; }
+  else if (!fantState.driver1) { fantState.driver1 = name; }
+  else if (!fantState.driver2) { fantState.driver2 = name; }
+  else { showToast('❌ Hai già 2 piloti. Deselezionane uno.','err'); return; }
+  const next = getNextRace();
+  if (next) {
+    const used = getBudgetUsed();
+    if (used > BUDGET_TOTAL) showToast('❌ Budget superato! (-'+(used-BUDGET_TOTAL)+' cr)','err');
+    renderFantasy();
+  }
+}
+
+function selectTeam(name) {
+  fantState.team1 = fantState.team1 === name ? null : name;
+  const used = getBudgetUsed();
+  if (used > BUDGET_TOTAL) showToast('❌ Budget superato! (-'+(used-BUDGET_TOTAL)+' cr)','err');
+  renderFantasy();
+}
+
+async function saveFantasyTeam(raceId) {
+  if (!fantState.driver1 || !fantState.driver2 || !fantState.team1) {
+    showToast('❌ Seleziona 2 piloti e 1 scuderia','err'); return;
+  }
+  if (fantState.driver1 === fantState.driver2) {
+    showToast('❌ Stesso pilota due volte!','err'); return;
+  }
+  const used = getBudgetUsed();
+  if (used > BUDGET_TOTAL) {
+    showToast('❌ Budget superato di '+(used-BUDGET_TOTAL)+' crediti!','err'); return;
+  }
+  const payload = {
+    user_id: currentUser.id, race_id: raceId,
+    driver1: fantState.driver1, driver2: fantState.driver2,
+    team1: fantState.team1, budget_used: used,
+    saved_at: new Date().toISOString()
+  };
+  const { error } = await sb.from('fantasy_teams').upsert(payload, {onConflict:'user_id,race_id'});
+  if (error) { showToast('❌ '+error.message,'err'); return; }
+  showToast('✅ Team salvato! Budget usato: '+used+'/'+BUDGET_TOTAL+' cr','ok');
+  renderFantasy();
+}
+
+// ══════════════════════════════════════════════
+//  PRONOSTICI
+// ══════════════════════════════════════════════
+async function renderPredict() {
+  const next = getNextRace();
+  const el = document.getElementById('predict-content');
+  if (!next) { el.innerHTML = '<div class="status-banner sb-info">Nessun GP disponibile.</div>'; return; }
+
+  const isLocked = new Date(next.sessions.race) <= new Date();
+  const { data: ex } = await sb.from('predictions').select('*').eq('user_id', currentUser.id).eq('race_id', next.id).maybeSingle();
+
+  _sc = ex?.sc ?? null; _rf = ex?.rf ?? null; _dnf = ex?.dnf_count || 0;
+
+  const dOpt = (id, val) => `<select class="fi fi-sel" id="${id}">
+    <option value="">— Seleziona —</option>
+    ${DRIVERS_2026.map(d=>`<option value="${d.name}"${val===d.name?' selected':''}>#${d.num} ${d.name} (${d.team})</option>`).join('')}
+  </select>`;
+  const tOpt = (id, val) => `<select class="fi fi-sel" id="${id}">
+    <option value="">— Seleziona —</option>
+    ${TEAMS_2026.map(t=>`<option value="${t.name}"${val===t.name?' selected':''}>${t.name}</option>`).join('')}
+  </select>`;
+
+  el.innerHTML = `
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;text-transform:uppercase;margin-bottom:10px">
+      ${next.flag} R${next.round} · ${next.name}
+    </div>
+    ${isLocked ? '<div class="status-banner sb-warn">⏰ Gara iniziata — pronostici chiusi</div>' : ''}
+    ${ex ? '<div class="status-banner sb-ok">✅ Pronostico già inserito — puoi aggiornarlo</div>' : ''}
+
+    <div class="psec">
+      <div class="psectit">🏆 Podio Gara</div>
+      <div class="prow"><div class="plabel">🥇 Vincitore</div>${dOpt('pp1', ex?.p1)}</div>
+      <div class="prow"><div class="plabel">🥈 Secondo</div>${dOpt('pp2', ex?.p2)}</div>
+      <div class="prow"><div class="plabel">🥉 Terzo</div>${dOpt('pp3', ex?.p3)}</div>
+    </div>
+
+    <div class="psec">
+      <div class="psectit">🏎️ Scuderie</div>
+      <div class="prow"><div class="plabel">🏅 Migliore Scuderia del Weekend</div>${tOpt('pbt', ex?.best_team)}</div>
+      <div class="prow"><div class="plabel">💩 Peggiore Scuderia del Weekend</div>${tOpt('pwt', ex?.worst_team)}</div>
+    </div>
+
+    <div class="psec">
+      <div class="psectit">⭐ Extra</div>
+      <div class="prow"><div class="plabel">💫 Rivelazione GP (pilota sorpresa)</div>${dOpt('prev', ex?.revelation)}</div>
+      <div class="prow"><div class="plabel">⚡ Giro Veloce</div>${dOpt('pfast', ex?.fastest)}</div>
+      ${next.sprint ? `<div class="prow"><div class="plabel">🏁 Vincitore Sprint Race</div>${dOpt('pspr', ex?.sprint_win)}</div>` : ''}
+    </div>
+
+    <div class="psec">
+      <div class="psectit">🚨 Eventi di Gara</div>
+      <div class="prow">
+        <div class="plabel">🚗 Safety Car?</div>
+        <div class="tog">
+          <button class="tb${_sc===true?' on yes':''}" id="sc-y" onclick="setTog('sc',true)">✅ Sì</button>
+          <button class="tb${_sc===false?' on':''}" id="sc-n" onclick="setTog('sc',false)">❌ No</button>
+        </div>
+      </div>
+      <div class="prow" style="margin-top:9px">
+        <div class="plabel">🚩 Bandiera Rossa?</div>
+        <div class="tog">
+          <button class="tb${_rf===true?' on yes':''}" id="rf-y" onclick="setTog('rf',true)">✅ Sì</button>
+          <button class="tb${_rf===false?' on':''}" id="rf-n" onclick="setTog('rf',false)">❌ No</button>
+        </div>
+      </div>
+      <div class="prow" style="margin-top:9px">
+        <div class="plabel">💥 Numero Ritiri (DNF)</div>
+        <div class="numinput">
+          <button class="nb" onclick="chDNF(-1)">−</button>
+          <div class="nv" id="dnf-v">${_dnf}</div>
+          <button class="nb" onclick="chDNF(1)">+</button>
+          <span style="font-size:11px;color:var(--t3)">piloti</span>
+        </div>
+      </div>
+    </div>
+
+    ${!isLocked ? `
+    <div class="subbar">
+      <button class="btn btn-r btn-w" onclick="savePred('${next.id}')" style="font-size:16px;padding:14px">
+        ${ex ? '✏️ Aggiorna Pronostico' : '💾 Salva Pronostico'}
+      </button>
+    </div>` : ''}
+  `;
+}
+
+function setTog(f, v) {
+  if (f === 'sc') {
+    _sc = v;
+    document.getElementById('sc-y').className = 'tb'+(v===true?' on yes':'');
+    document.getElementById('sc-n').className = 'tb'+(v===false?' on':'');
+  } else {
+    _rf = v;
+    document.getElementById('rf-y').className = 'tb'+(v===true?' on yes':'');
+    document.getElementById('rf-n').className = 'tb'+(v===false?' on':'');
+  }
+}
+function chDNF(d) { _dnf = Math.max(0, Math.min(15, _dnf+d)); document.getElementById('dnf-v').textContent = _dnf; }
+
+async function savePred(raceId) {
+  if (new Date(CALENDAR_2026.find(r=>r.id===raceId)?.sessions.race) <= new Date()) {
+    showToast('❌ Gara iniziata — pronostici chiusi','err'); return;
+  }
+  const p1 = document.getElementById('pp1').value;
+  const p2 = document.getElementById('pp2').value;
+  const p3 = document.getElementById('pp3').value;
+  if (!p1||!p2||!p3) { showToast('❌ Completa almeno il podio','err'); return; }
+  if (p1===p2||p1===p3||p2===p3) { showToast('❌ Stesso pilota nel podio!','err'); return; }
+  const payload = {
+    user_id: currentUser.id, race_id: raceId, p1, p2, p3,
+    best_team: document.getElementById('pbt').value||null,
+    worst_team: document.getElementById('pwt').value||null,
+    revelation: document.getElementById('prev').value||null,
+    fastest: document.getElementById('pfast').value||null,
+    sprint_win: document.getElementById('pspr')?.value||null,
+    sc: _sc, rf: _rf, dnf_count: _dnf, saved_at: new Date().toISOString()
+  };
+  const { error } = await sb.from('predictions').upsert(payload,{onConflict:'user_id,race_id'});
+  if (error) { showToast('❌ '+error.message,'err'); return; }
+  showToast('✅ Pronostico salvato!','ok');
+  renderPredict();
+}
+
+// ══════════════════════════════════════════════
+//  CALCOLO PUNTI
+// ══════════════════════════════════════════════
+function calcPoints(pred, result, sc) {
+  let pts = 0;
+  if (!pred || !result) return 0;
+  if (pred.p1 && pred.p1 === result.p1) pts += sc.p1;
+  else if (pred.p1 && [result.p1,result.p2,result.p3].includes(pred.p1)) pts += sc.top3;
+  if (pred.p2 && pred.p2 === result.p2) pts += sc.p2;
+  else if (pred.p2 && [result.p1,result.p2,result.p3].includes(pred.p2)) pts += sc.top3;
+  if (pred.p3 && pred.p3 === result.p3) pts += sc.p3;
+  else if (pred.p3 && [result.p1,result.p2,result.p3].includes(pred.p3)) pts += sc.top3;
+  if (pred.best_team && pred.best_team === result.best_team) pts += sc.bteam;
+  if (pred.worst_team && pred.worst_team === result.worst_team) pts += sc.wteam;
+  if (pred.sc !== null && pred.sc === result.sc) pts += sc.sc;
+  if (pred.rf !== null && pred.rf === result.rf) pts += sc.rf;
+  if (pred.dnf_count !== undefined && result.dnf_count !== undefined) {
+    if (pred.dnf_count === result.dnf_count) pts += sc.dnf_exact;
+    else if (Math.abs(pred.dnf_count - result.dnf_count) === 1) pts += sc.dnf_near;
+  }
+  if (pred.revelation && pred.revelation === result.revelation) pts += sc.rev;
+  if (pred.fastest && pred.fastest === result.fastest) pts += sc.fast;
+  return pts;
+}
+
+// ══════════════════════════════════════════════
+//  LIVE — OpenF1 API
+// ══════════════════════════════════════════════
+let liveData = { lap:0, total:0, status:'none', dnf:0, sc:0, rf:0, positions:[], raceTitle:'', sessionKey:null };
+
+async function fetchOpenF1() {
+  const stateEl = document.getElementById('api-state');
+  try {
+    // Usa l'anno corrente dinamicamente
+    const year = new Date().getFullYear();
+    const sRes = await fetch(`https://api.openf1.org/v1/sessions?session_type=Race&year=${year}&order=-date_start&limit=1`);
+    if (!sRes.ok) throw new Error(`HTTP ${sRes.status}`);
+    const sessions = await sRes.json();
+    if (!sessions?.length) throw new Error('Nessuna sessione trovata');
+    const sess = sessions[0];
+    liveData.sessionKey = sess.session_key;
+    liveData.raceTitle = `${sess.country_name||sess.circuit_short_name} · GP ${year}`;
+
+    const [drvRes, posRes, rcRes, lapRes] = await Promise.all([
+      fetch(`https://api.openf1.org/v1/drivers?session_key=${sess.session_key}`),
+      fetch(`https://api.openf1.org/v1/position?session_key=${sess.session_key}&order=-date&limit=200`),
+      fetch(`https://api.openf1.org/v1/race_control?session_key=${sess.session_key}&order=-date&limit=50`),
+      fetch(`https://api.openf1.org/v1/laps?session_key=${sess.session_key}&order=-date_start&limit=1`)
+    ]);
+    const [drvData, posData, rcData, lapData] = await Promise.all([drvRes.json(),posRes.json(),rcRes.json(),lapRes.json()]);
+
+    const drvMap = {};
+    (drvData||[]).forEach(d => { drvMap[d.driver_number] = d; });
+
+    if (lapData?.length) liveData.lap = lapData[0].lap_number || 0;
+    liveData.sc=0; liveData.rf=0; liveData.dnf=0; liveData.status='green';
+
+    (rcData||[]).forEach(e => {
+      const msg = (e.message||e.flag||'').toUpperCase();
+      if (msg.includes('SAFETY CAR')) liveData.sc++;
+      if (msg.includes('RED FLAG')||msg==='RED') liveData.rf++;
+      if (msg.includes('RETIRE')||msg.includes('DNF')||msg.includes('WITHDREW')) liveData.dnf++;
+    });
+
+    const latestRC = (rcData||[])[0];
+    if (latestRC) {
+      const m = (latestRC.message||latestRC.flag||'').toUpperCase();
+      if (m.includes('SAFETY CAR')) liveData.status='sc';
+      else if (m.includes('RED')) liveData.status='red';
+      else if (m.includes('GREEN')||m.includes('CLEAR')) liveData.status='green';
+    }
+
+    const latestPos = {};
+    (posData||[]).forEach(p => {
+      if (!latestPos[p.driver_number] || new Date(p.date) > new Date(latestPos[p.driver_number].date))
+        latestPos[p.driver_number] = p;
+    });
+
+    // Ottieni i piloti del team dell'utente per evidenziarli
+    const myTeamDrivers = new Set();
+    if (fantState.driver1) myTeamDrivers.add(fantState.driver1.toUpperCase());
+    if (fantState.driver2) myTeamDrivers.add(fantState.driver2.toUpperCase());
+
+    liveData.positions = Object.values(latestPos).sort((a,b)=>a.position-b.position).slice(0,20).map(p=>({
+      pos: p.position,
+      name: drvMap[p.driver_number]?.full_name||`#${p.driver_number}`,
+      team: drvMap[p.driver_number]?.team_name||'—',
+      num: p.driver_number,
+      color: drvMap[p.driver_number]?.team_colour||'888',
+      isMine: myTeamDrivers.has((drvMap[p.driver_number]?.full_name||'').toUpperCase())
+    }));
+
+    if (stateEl) stateEl.textContent = `✅ OpenF1 live · Aggiornato ${new Date().toLocaleTimeString('it-IT')}`;
+    document.getElementById('sync-time').textContent = new Date().toLocaleTimeString('it-IT');
+    document.getElementById('live-racename').textContent = liveData.raceTitle;
+  } catch(err) {
+    const active = getActiveRace();
+    liveData.positions = [];
+    const next = getNextRace();
+    liveData.raceTitle = next ? `Prossima: R${next.round} ${next.name}` : 'Nessuna gara';
+    if (stateEl) stateEl.textContent = `⚠️ ${err.message} · ${active?'Gara in corso':'Nessuna gara live ora'}`;
+    document.getElementById('sync-time').textContent = new Date().toLocaleTimeString('it-IT');
+  }
+  updateLiveUI();
+}
+
+function updateLiveUI() {
+  document.getElementById('lapcur').textContent = liveData.lap || '—';
+  document.getElementById('laptot').textContent = liveData.total || '—';
+  document.getElementById('lv-dnf').textContent = liveData.dnf;
+  document.getElementById('lv-sc').textContent = liveData.sc;
+  document.getElementById('lv-rf').textContent = liveData.rf;
+  const badge = document.getElementById('trkstatus');
+  if (liveData.status==='sc') { badge.textContent='🚗 Safety Car'; badge.className='stsbadge stsY'; }
+  else if (liveData.status==='red') { badge.textContent='🚩 Red Flag'; badge.className='stsbadge stsR'; }
+  else { badge.textContent='🟢 Green Flag'; badge.className='stsbadge stsG'; }
+
+  const posEl = document.getElementById('live-pos');
+  posEl.innerHTML = liveData.positions.length
+    ? liveData.positions.map(d=>`
+      <div class="posrow${d.pos<=3?' p'+d.pos:''}${d.isMine?' myd':''}">
+        <div class="posnum">${d.pos}</div>
+        <div style="width:3px;height:30px;background:#${d.color};border-radius:2px;flex-shrink:0"></div>
+        <div style="flex:1"><div class="posname">${d.name}${d.isMine?' <span style="color:var(--red);font-size:9px">◀ TUO</span>':''}</div><div class="posteam">${d.team}</div></div>
+        <div style="font-size:11px;color:var(--t3)">#${d.num}</div>
+      </div>`).join('')
+    : '<div style="text-align:center;padding:20px;color:var(--t3);font-size:12px">Nessuna gara in corso.<br>I dati live appaiono quando la gara inizia.</div>';
+
+  updateLiveFantaLB();
+}
+
+async function updateLiveFantaLB() {
+  const active = getActiveRace();
+  const fantEl = document.getElementById('live-fanta');
+  if (!active||!liveData.positions.length) {
+    fantEl.innerHTML = '<div style="text-align:center;padding:14px;color:var(--t3);font-size:12px">Punteggi live disponibili durante la gara.</div>';
+    return;
+  }
+  const { data: preds } = await sb.from('predictions').select('*,profiles(nickname,avatar,color)').eq('race_id', active.id);
+  const liveRes = {
+    p1: liveData.positions[0]?.name, p2: liveData.positions[1]?.name, p3: liveData.positions[2]?.name,
+    best_team: liveData.positions[0]?.team, sc: liveData.sc>0, rf: liveData.rf>0, dnf_count: liveData.dnf
+  };
+  const me = currentProfile?.id;
+  const scored = (preds||[]).map(p=>({
+    nick: p.profiles?.nickname||'?', av: p.profiles?.avatar||'?', col: p.profiles?.color||'#555',
+    pts: calcPoints(p, liveRes, DEFAULT_SCORES),
+    isMe: p.user_id === me
+  })).sort((a,b)=>b.pts-a.pts);
+  fantEl.innerHTML = scored.map((p,i)=>`
+    <div class="lbrow${i===0?' top1':''}${p.isMe?' me':''}">
+      <div class="lbpos ${['g','s','b'][i]||''}">${['🥇','🥈','🥉'][i]||i+1}</div>
+      <div class="av" style="background:${p.col};width:25px;height:25px;font-size:11px;flex-shrink:0">${p.av}</div>
+      <div class="lbname">${p.nick}${p.isMe?' <span style="color:var(--red);font-size:9px">(tu)</span>':''}</div>
+      <div><div class="lbpts" style="color:var(--yellow)">${p.pts}</div><div class="lbptsl">live</div></div>
+    </div>`).join('')
+  || '<div style="color:var(--t3);text-align:center;font-size:12px;padding:12px">Nessun pronostico inserito.</div>';
+}
+
+function startLive() { fetchOpenF1(); if(liveInterval) clearInterval(liveInterval); liveInterval=setInterval(fetchOpenF1,10000); }
+function stopLive()  { if(liveInterval){ clearInterval(liveInterval); liveInterval=null; } }
+
+// ══════════════════════════════════════════════
+//  CLASSIFICA
+// ══════════════════════════════════════════════
+async function renderStandings(tab) {
+  currentStab = tab;
+  ['gen','gp','stats'].forEach(t => {
+    const b = document.getElementById('stab-'+t);
+    if (b) b.className = 'btn btn-sm ' + (t===tab?'btn-r':'btn-g');
+  });
+  const el = document.getElementById('stand-content');
+  if (!el) return;
+  if (tab === 'gen') {
+    const { data: profiles } = await sb.from('profiles').select('*').order('total_pts',{ascending:false});
+    const me = currentProfile?.id;
+    el.innerHTML = `
+      <div class="card" style="margin-bottom:11px">
+        <div class="ctitle" style="margin-bottom:11px">📈 Stagione 2026</div>
+        <div class="srow"><span class="sl">🏆 Leader</span><span class="sv" style="color:var(--yellow)">${profiles?.[0]?.nickname||'—'}</span></div>
+        <div class="srow"><span class="sl">👥 Partecipanti</span><span class="sv">${profiles?.length||0}</span></div>
+        <div class="srow"><span class="sl">🟣 Sprint Weekends</span><span class="sv">6 (Cina, Miami, Canada, UK, Olanda, Singapore)</span></div>
+        <div class="srow"><span class="sl">🆕 Nuovi team 2026</span><span class="sv">Audi + Cadillac</span></div>
+      </div>
+      ${(profiles||[]).map((p,i)=>`
+        <div class="lbrow${i===0?' top1':''}${p.id===me?' me':''}">
+          <div class="lbpos ${['g','s','b'][i]||''}">${['🥇','🥈','🥉'][i]||i+1}</div>
+          <div class="av" style="background:${p.color};width:26px;height:26px;font-size:12px;flex-shrink:0">${p.avatar}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px">${p.nickname}${p.id===me?' <span style="color:var(--red);font-size:9px">(tu)</span>':''}</div>
+            <div style="font-size:10px;color:var(--t3)">${p.gps_done||0} GP · media ${p.gps_done>0?Math.round(p.total_pts/p.gps_done):0} pts/GP</div>
+          </div>
+          <div class="lbpts">${p.total_pts}</div>
+        </div>`).join('')}`;
+  } else if (tab === 'gp') {
+    const { data: results } = await sb.from('race_results').select('*');
+    const doneRaces = CALENDAR_2026.filter(r => results?.find(x=>x.race_id===r.id));
+    if (!doneRaces.length) {
+      el.innerHTML = '<div style="color:var(--t3);text-align:center;padding:24px;font-size:12px">Nessun GP completato ancora.<br>I risultati appaiono dopo ogni gara.</div>';
+      return;
+    }
+    const { data: preds } = await sb.from('predictions').select('*,profiles(nickname,avatar,color)');
+    el.innerHTML = doneRaces.map(r => {
+      const res = results?.find(x=>x.race_id===r.id);
+      const racePreds = (preds||[]).filter(p=>p.race_id===r.id).map(p=>({
+        nick: p.profiles?.nickname||'?', av: p.profiles?.avatar||'?', col: p.profiles?.color||'#555',
+        pts: calcPoints(p, res, DEFAULT_SCORES)
+      })).sort((a,b)=>b.pts-a.pts);
+      return `<div class="weekbox">
+        <div class="wname">${r.flag} R${r.round} · ${r.name}</div>
+        ${res ? `<div style="font-size:11px;color:var(--t2);margin-bottom:8px">🥇 ${res.p1} · 🥈 ${res.p2} · 🥉 ${res.p3}</div>` : ''}
+        ${racePreds.map((p,i)=>`
+          <div class="lbrow" style="margin-bottom:4px">
+            <div class="lbpos ${['g','s','b'][i]||''}">${i+1}</div>
+            <div class="av" style="background:${p.col};width:22px;height:22px;font-size:10px;flex-shrink:0">${p.av}</div>
+            <div class="lbname">${p.nick}</div>
+            <div class="lbpts" style="font-size:15px">${p.pts}</div>
+          </div>`).join('')}
+      </div>`;
+    }).join('');
+  } else {
+    const { data: profiles } = await sb.from('profiles').select('*').order('total_pts',{ascending:false});
+    el.innerHTML = `
+      <div class="card">
+        <div class="ctitle" style="margin-bottom:11px">📊 Statistiche Stagione</div>
+        ${(profiles||[]).map((p,i)=>`
+          <div class="srow">
+            <span class="sl"><span style="font-size:14px">${p.avatar}</span> ${p.nickname}</span>
+            <div style="text-align:right">
+              <span class="sv" style="color:var(--red)">${p.total_pts} pts</span>
+              <div style="font-size:10px;color:var(--t3)">${p.gps_done||0} GP · media ${p.gps_done>0?Math.round(p.total_pts/p.gps_done):0}</div>
+            </div>
+          </div>`).join('')}
+      </div>`;
+  }
+}
+
+function showStab(tab) { renderStandings(tab); }
+
+// ══════════════════════════════════════════════
+//  PROFILO
+// ══════════════════════════════════════════════
+async function renderProfile() {
+  if (!currentProfile) return;
+  const p = currentProfile;
+  document.getElementById('pav').textContent = p.avatar;
+  document.getElementById('pav').style.background = p.color;
+  document.getElementById('pname').textContent = p.nickname;
+  document.getElementById('prole').textContent = p.role==='admin'?'⚙️ Admin':'🏎️ Pilota';
+  const { data: profiles } = await sb.from('profiles').select('id').order('total_pts',{ascending:false});
+  const rank = (profiles||[]).findIndex(x=>x.id===p.id)+1;
+  document.getElementById('pstats').innerHTML = `
+    <div class="srow"><span class="sl">🏆 Punti Totali</span><span class="sv" style="color:var(--red)">${p.total_pts}</span></div>
+    <div class="srow"><span class="sl">📊 Posizione classifica</span><span class="sv">#${rank} di ${profiles?.length||0}</span></div>
+    <div class="srow"><span class="sl">🏁 GP completati</span><span class="sv">${p.gps_done||0}</span></div>
+    <div class="srow"><span class="sl">📈 Media pts/GP</span><span class="sv">${p.gps_done>0?Math.round(p.total_pts/p.gps_done):0} pts</span></div>
+  `;
+  document.getElementById('padmin-btn').innerHTML = p.role==='admin'
+    ? `<button class="btn btn-g btn-w" style="margin-bottom:11px" onclick="navTo('admin')">⚙️ Pannello Admin</button>` : '';
+  const { data: preds } = await sb.from('predictions').select('race_id,p1').eq('user_id', currentUser.id);
+  const { data: results } = await sb.from('race_results').select('*');
+  const predMap = Object.fromEntries((preds||[]).map(pr=>[pr.race_id,pr]));
+  const doneRaces = CALENDAR_2026.filter(r => results?.find(x=>x.race_id===r.id));
+  document.getElementById('phist').innerHTML = doneRaces.length===0
+    ? '<div style="color:var(--t3);text-align:center;padding:18px;font-size:12px">Nessun GP completato ancora.</div>'
+    : doneRaces.map(r => {
+        const pred = predMap[r.id];
+        const res  = results?.find(x=>x.race_id===r.id);
+        const pts  = pred&&res ? calcPoints(pred, res, DEFAULT_SCORES) : null;
+        return `<div class="rcard">
+          <div style="font-size:20px;width:24px;text-align:center">${r.flag}</div>
+          <div style="flex:1"><div style="font-weight:700;font-size:13px">R${r.round} · ${r.name}</div>
+            <div style="font-size:10px;color:var(--t2)">${pred?'✅ '+pred.p1:'❌ Nessun pronostico'}</div></div>
+          <div style="text-align:right">
+            <div class="lbpts" style="${pts!==null?'':'color:var(--t3)'}">${pts!==null?pts:'—'}</div>
+            <div class="lbptsl">pts</div>
+          </div>
+        </div>`;
+      }).join('');
+}
+
+// ══════════════════════════════════════════════
+//  ADMIN
+// ══════════════════════════════════════════════
+async function renderAdminLog() {
+  if (!sb) return;
+  const { data } = await sb.from('admin_log').select('*').order('ts',{ascending:false}).limit(10);
+  document.getElementById('adminlog').innerHTML = (data||[]).map(l=>`
+    <div class="srow">
+      <span class="sl" style="font-size:10px;min-width:50px">${new Date(l.ts).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}</span>
+      <span style="font-size:12px">${l.action}</span>
+    </div>`).join('') || '<div style="color:var(--t3);font-size:12px">Nessuna attività.</div>';
+}
+
+async function openMod(type) {
+  document.getElementById('moverlay').classList.remove('hidden');
+  const c = document.getElementById('mcontent');
+  if (type === 'scores') {
+    c.innerHTML = `<span class="mclose" onclick="closeMod()">✕</span>
+      <div class="mtitle">🧮 Sistema Punteggi</div>
+      ${[['🥇 Vincitore P1','p1',10],['🥈 Secondo P2','p2',8],['🥉 Terzo P3','p3',6],['Pilota in top3 pos sbagliata','top3',5],['🏅 Miglior team','bteam',8],['💩 Peggior team','wteam',8],['🚗 Safety Car corretta','sc',5],['🚩 Red Flag corretta','rf',7],['💥 Ritiri esatti','dnf_exact',10],['Ritiri ±1','dnf_near',5],['⭐ Rivelazione','rev',10],['⚡ Giro veloce','fast',4]]
+        .map(([l,k,def])=>`<div class="srow"><span class="sl">${l}</span><input type="number" id="sc_${k}" value="${DEFAULT_SCORES[k]||def}" min="0" max="100" style="width:52px;padding:6px;background:var(--s2);border:1px solid var(--border);border-radius:6px;color:var(--t1);text-align:center;font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:16px"></div>`).join('')}
+      <button class="btn btn-r btn-w" style="margin-top:14px" onclick="saveScores()">💾 Salva</button>`;
+  } else if (type === 'users') {
+    const { data: users } = await sb.from('profiles').select('*').order('total_pts',{ascending:false});
+    c.innerHTML = `<span class="mclose" onclick="closeMod()">✕</span>
+      <div class="mtitle">👥 Utenti Lega</div>
+      <div class="status-banner sb-info">Codice lega: <strong>${LEAGUE_CODE}</strong> — condividi con gli amici!</div>
+      ${(users||[]).map(u=>`
+        <div class="lbrow" style="margin-bottom:6px">
+          <div class="av" style="background:${u.color};width:28px;height:28px;font-size:13px;flex-shrink:0">${u.avatar}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px">${u.nickname}</div>
+            <div style="font-size:10px;color:var(--t3)">${u.role} · ${u.total_pts} pts · ${u.gps_done||0} GP</div>
+          </div>
+          ${u.role !== 'admin' ? `<button class="btn btn-sm btn-g" onclick="promoteUser('${u.id}')">⬆️ Admin</button>` : '<span style="font-size:10px;color:var(--red);font-weight:700">ADMIN</span>'}
+        </div>`).join('')}`;
+  } else if (type === 'results') {
+    c.innerHTML = `<span class="mclose" onclick="closeMod()">✕</span>
+      <div class="mtitle">🔄 Risultati GP</div>
+      <div class="status-banner sb-info">Inserisci i risultati di ogni GP per calcolare i punti.</div>
+      ${CALENDAR_2026.map(r=>`
+        <div class="rcard" style="flex-wrap:wrap;gap:6px">
+          <div style="font-size:20px">${r.flag}</div>
+          <div style="flex:1;min-width:100px">
+            <div style="font-weight:700;font-size:13px">R${r.round} · ${r.name}</div>
+            <div style="font-size:10px;color:var(--t2)">${fmtIt(r.sessions.race)}</div>
+          </div>
+          <button class="btn btn-g btn-sm" onclick="openManualResult('${r.id}')">✏️ Inserisci</button>
+        </div>`).join('')}`;
+  } else if (type === 'bonus') {
+    const { data: bonuses } = await sb.from('bonuses').select('*').order('name');
+    c.innerHTML = `<span class="mclose" onclick="closeMod()">✕</span>
+      <div class="mtitle">⭐ Bonus Speciali</div>
+      ${(bonuses||[]).map(b=>`
+        <div class="lbrow" style="margin-bottom:6px">
+          <div style="flex:1"><div style="font-weight:700;font-size:13px">${b.name}</div><div style="font-size:10px;color:var(--t3)">+${b.pts} punti</div></div>
+          <button class="btn btn-sm ${b.active?'btn-ok':'btn-no'}" onclick="togBonus('${b.id}',${!b.active})">${b.active?'✅ ON':'❌ OFF'}</button>
+        </div>`).join('')}
+      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:8px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;margin-bottom:10px">➕ Nuovo Bonus</div>
+        <div class="fg"><label>Nome</label><input class="fi" type="text" id="bnname" placeholder="es. Doppio Sorpasso"></div>
+        <div class="fg"><label>Punti</label><input class="fi" type="number" id="bnpts" value="5" min="1" max="50"></div>
+        <button class="btn btn-r btn-w" onclick="addBonus()">Aggiungi</button>
+      </div>`;
+  }
+}
+
+async function promoteUser(uid) {
+  await sb.from('profiles').update({role:'admin'}).eq('id',uid);
+  await sb.from('admin_log').insert({action:`Utente promosso ad admin`,by_user:currentProfile?.nickname||'admin'});
+  openMod('users');
+  showToast('✅ Utente promosso ad admin','ok');
+}
+
+async function openManualResult(raceId) {
+  const race = CALENDAR_2026.find(r=>r.id===raceId);
+  const { data: existing } = await sb.from('race_results').select('*').eq('race_id',raceId).maybeSingle();
+  const c = document.getElementById('mcontent');
+  const dOpt = (id, val) => `<select class="fi fi-sel" id="mr_${id}">
+    <option value="">— Seleziona —</option>
+    ${DRIVERS_2026.map(d=>`<option value="${d.name}"${val===d.name?' selected':''}>#${d.num} ${d.name}</option>`).join('')}
+  </select>`;
+  const tOpt = (id, val) => `<select class="fi fi-sel" id="mr_t${id}">
+    <option value="">— Seleziona —</option>
+    ${TEAMS_2026.map(t=>`<option value="${t.name}"${val===t.name?' selected':''}>${t.name}</option>`).join('')}
+  </select>`;
+  c.innerHTML = `<span class="mclose" onclick="closeMod()">✕</span>
+    <div class="mtitle">${race?.flag||'🏁'} ${race?.name||raceId}</div>
+    ${existing ? '<div class="status-banner sb-ok">✅ Risultati già presenti — modifica per aggiornare</div>' : ''}
+    <div class="fg"><label>🥇 Vincitore</label>${dOpt('p1',existing?.p1)}</div>
+    <div class="fg"><label>🥈 Secondo</label>${dOpt('p2',existing?.p2)}</div>
+    <div class="fg"><label>🥉 Terzo</label>${dOpt('p3',existing?.p3)}</div>
+    <div class="fg"><label>🏅 Migliore Team</label>${tOpt('bt',existing?.best_team)}</div>
+    <div class="fg"><label>💩 Peggiore Team</label>${tOpt('wt',existing?.worst_team)}</div>
+    <div class="fg"><label>⭐ Rivelazione</label>${dOpt('rev',existing?.revelation)}</div>
+    <div class="fg"><label>⚡ Giro Veloce</label>${dOpt('fast',existing?.fastest)}</div>
+    ${race?.sprint ? `<div class="fg"><label>🏁 Vincitore Sprint</label>${dOpt('spr',existing?.sprint_win)}</div>` : ''}
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <div style="flex:1"><label style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--t3);display:block;margin-bottom:6px">🚗 Safety Car</label>
+        <select class="fi fi-sel" id="mr_sc"><option value="">—</option><option value="true"${existing?.sc===true?' selected':''}>Sì</option><option value="false"${existing?.sc===false?' selected':''}>No</option></select></div>
+      <div style="flex:1"><label style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--t3);display:block;margin-bottom:6px">🚩 Red Flag</label>
+        <select class="fi fi-sel" id="mr_rf"><option value="">—</option><option value="true"${existing?.rf===true?' selected':''}>Sì</option><option value="false"${existing?.rf===false?' selected':''}>No</option></select></div>
+      <div style="flex:1"><label style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--t3);display:block;margin-bottom:6px">💥 DNF</label>
+        <input class="fi" type="number" id="mr_dnf" value="${existing?.dnf_count||0}" min="0" max="20"></div>
+    </div>
+    <button class="btn btn-r btn-w" onclick="saveManualResult('${raceId}')">💾 Salva e Calcola Punti</button>`;
+}
+
+async function saveManualResult(raceId) {
+  const g = id => document.getElementById('mr_'+id)?.value||null;
+  const result = {
+    race_id: raceId, p1:g('p1'), p2:g('p2'), p3:g('p3'),
+    best_team: document.getElementById('mr_tbt')?.value||null,
+    worst_team: document.getElementById('mr_twt')?.value||null,
+    revelation: g('rev'), fastest: g('fast'),
+    sprint_win: g('spr')||null,
+    sc: document.getElementById('mr_sc')?.value==='true',
+    rf: document.getElementById('mr_rf')?.value==='true',
+    dnf_count: parseInt(document.getElementById('mr_dnf')?.value)||0,
+    source:'manual', fetched_at: new Date().toISOString()
+  };
+  const { error } = await sb.from('race_results').upsert(result,{onConflict:'race_id'});
+  if (error) { showToast('❌ '+error.message,'err'); return; }
+  closeMod();
+  const { data: preds } = await sb.from('predictions').select('*').eq('race_id',raceId);
+  for (const pred of (preds||[])) {
+    const pts = calcPoints(pred, result, DEFAULT_SCORES);
+    const { error: e } = await sb.rpc('increment_pts',{uid:pred.user_id, add_pts:pts, add_gps:1});
+    if (e) {
+      const { data: prof } = await sb.from('profiles').select('total_pts,gps_done').eq('id',pred.user_id).single();
+      if (prof) await sb.from('profiles').update({total_pts:(prof.total_pts||0)+pts,gps_done:(prof.gps_done||0)+1}).eq('id',pred.user_id);
+    }
+  }
+  await sb.from('admin_log').insert({action:`Risultati ${raceId} salvati`,by_user:currentProfile?.nickname||'admin'});
+  showToast('✅ Risultati salvati e punti calcolati!','ok');
+  renderHome(); renderStandings('gen'); renderAdminLog();
+}
+
+function saveScores() {
+  const keys = ['p1','p2','p3','top3','bteam','wteam','sc','rf','dnf_exact','dnf_near','rev','fast'];
+  keys.forEach(k => { const v=parseInt(document.getElementById('sc_'+k)?.value); if(!isNaN(v)) DEFAULT_SCORES[k]=v; });
+  closeMod(); showToast('✅ Punteggi aggiornati','ok');
+}
+
+async function togBonus(id, active) {
+  await sb.from('bonuses').update({active}).eq('id',id);
+  openMod('bonus');
+}
+
+async function addBonus() {
+  const name = document.getElementById('bnname').value.trim();
+  const pts  = parseInt(document.getElementById('bnpts').value)||5;
+  if (!name) { showToast('❌ Inserisci nome','err'); return; }
+  await sb.from('bonuses').insert({name,pts,active:true});
+  openMod('bonus'); showToast('✅ Bonus aggiunto','ok');
+}
+
+// ══════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════
+function closeMod() { document.getElementById('moverlay').classList.add('hidden'); }
+
+function showToast(msg, type='ok') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`; t.textContent = msg;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+function fmtIt(iso) {
+  return new Date(iso).toLocaleString('it-IT',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Rome'});
+}
+
+// ── BOOT ──
+init();
+</script>
+</body>
+</html>
