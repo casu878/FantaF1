@@ -1,4 +1,4 @@
-﻿    // ══════════════════ CALCOLO PUNTI AVANZATO ══════════════════
+// ══════════════════ CALCOLO PUNTI AVANZATO ══════════════════
 
     function calcFantasyPts(team, result, noNegative, powerups) {
       if (!team || !result) return { total: 0, breakdown: [] };
@@ -27,26 +27,32 @@
         // ── QUALIFICHE (nuove regole 2026) ──
         // Q2: +5cr +3pts, Q3: +10cr +5pts, Pole: +15cr +7pts
         // Usiamo QUAL_FULL come punti per posizione nelle old rule, ma adesso:
+        // Q3 positions (P1-P10)
         const qualQOrder = ['qual_p1', 'qual_p2', 'qual_p3', 'qual_p4', 'qual_p5', 'qual_p6', 'qual_p7', 'qual_p8', 'qual_p9', 'qual_p10'];
-        const qPos = qualQOrder.findIndex(k => result[k] === dName) + 1;
-        // Pole = P1 o result.pole
+        const qPos = qualQOrder.findIndex(k => result[k] === dName) + 1; // 1-based, 0 if not found
+        // Q2 positions (P11-P15) — stored in q2_p11..q2_p15
+        const q2Order = ['q2_p11','q2_p12','q2_p13','q2_p14','q2_p15'];
+        const isQ2only = q2Order.some(k => result[k] === dName);
+        // Q1 positions (P16-P20) — stored in q1_p16..q1_p20 or q2_drivers list
+        const q1Order = ['q1_p16','q1_p17','q1_p18','q1_p19','q1_p20'];
+        const isQ1only = q1Order.some(k => result[k] === dName);
+        // Legacy fallback: q2_drivers comma list
+        const q2LegacyList = (result.q2_drivers || '').split(',').map(x => x.trim()).filter(Boolean);
         const isPole = result.pole === dName || qPos === 1;
-        // Q3 = posizioni 1-10 in qualifica
         const isQ3 = qPos >= 1 && qPos <= 10;
-        // Q2 = se ha partecipato alla Q2 (usiamo q2_drivers list se disponibile, altrimenti pos 11-15)
-        const q2List = (result.q2_drivers || '').split(',').map(x => x.trim()).filter(Boolean);
-        const isQ2 = q2List.includes(dName) || (qPos >= 11 && qPos <= 15);
+        const isQ2 = isQ2only || q2LegacyList.includes(dName);
 
         if (isPole) {
-          dPts += 7; breakdown.push({ label: `${label} POLE (+7pts +15cr)`, pts: 7 });
+          dPts += 7; breakdown.push({ label: label + ' POLE (+7pts)', pts: 7 });
         } else if (isQ3) {
-          dPts += 5; breakdown.push({ label: `${label} Q3 P${qPos} (+5pts +10cr)`, pts: 5 });
+          dPts += 5; breakdown.push({ label: label + ' Q3 P' + qPos + ' (+5pts)', pts: 5 });
         } else if (isQ2) {
-          dPts += 3; breakdown.push({ label: `${label} Q2 (+3pts +5cr)`, pts: 3 });
-        } else if (qPos > 0 && QUAL_FULL[qPos]) {
-          dPts += QUAL_FULL[qPos]; breakdown.push({ label: `${label} Q${qPos}`, pts: QUAL_FULL[qPos] });
+          dPts += 3; breakdown.push({ label: label + ' Q2 (+3pts)', pts: 3 });
+        } else if (isQ1only) {
+          // Q1 eliminated: 0 pts, no bonus
         } else if (result.pole === dName && !qPos) {
-          dPts += 7; breakdown.push({ label: `${label} Pole (+7pts)`, pts: 7 });
+          // pole stored but no qual order
+          dPts += 7; breakdown.push({ label: label + ' Pole (+7pts)', pts: 7 });
         }
         // NC/DSQ quali
         if (dnqList.includes(dName)) {
@@ -409,4 +415,3 @@
       const p = calcPredPts(prediction, result, pu.doublePred || false, pu);
       return f.total + p.total;
     }
-
