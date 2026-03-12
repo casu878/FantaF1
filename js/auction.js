@@ -41,6 +41,7 @@
         html += '<button class="btn ' + (marketOpen ? 'btn-no' : 'btn-ok') + ' btn-sm" onclick="toggleMarket(' + (marketOpen ? 'false' : 'true') + ')">' + (marketOpen ? '&#128308; Chiudi Mercato' : '&#128994; Apri Mercato') + '</button>';
         html += '<button class="btn btn-g btn-sm" onclick="openMod(\'auction\')">&#8635; Aggiorna</button>';
         html += '<button class="btn btn-no btn-sm" onclick="resetAllAuction()" style="border-color:#ff4444">&#x1F5D1; Reset Asta Completo</button>';
+        html += '<button class="btn btn-g btn-sm" onclick="openResetBonusModal()" style="border-color:var(--yellow);color:var(--yellow)">&#127775; Reset Bonus</button>';
         html += '</div>';
       } else {
         html += '<div style="font-size:11px;color:var(--t3)">Solo l\'admin gestisce l\'asta</div>';
@@ -335,6 +336,51 @@
       showToast('Offerta ' + val + 'cr proposta — attendi conferma admin!', 'ok');
       openMod('auction');
     }
+
+    // ══════════════════ RESET BONUS UTENTE ══════════════════
+    async function openResetBonusModal() {
+      const { data: users } = await sb.from('profiles').select('id,nickname').order('nickname');
+      const opts = (users || []).map(u => `<option value="${u.id}">${u.nickname}</option>`).join('');
+      const modal = document.createElement('div');
+      modal.id = 'reset-bonus-modal';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+      modal.innerHTML = `
+        <div style="background:var(--s1);border:1px solid var(--yellow);border-radius:14px;padding:20px;width:100%;max-width:340px">
+          <div style="font-family:'Exo 2',sans-serif;font-weight:900;font-size:16px;margin-bottom:4px">✨ Reset Bonus Utente</div>
+          <div style="font-size:11px;color:var(--t3);margin-bottom:14px">Rimuove tutti i power-up acquistati da un utente e rimborsa il costo. Usa per correggere errori o gestire eccezioni.</div>
+          <label style="font-size:11px;color:var(--t3)">Seleziona utente</label>
+          <select id="rb-user" class="fi fi-sel" style="width:100%;margin:6px 0 14px">${opts}</select>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-no btn-w" onclick="confirmResetBonus()">🗑️ Reset Bonus</button>
+            <button class="btn btn-g btn-w" onclick="document.getElementById('reset-bonus-modal').remove()">Annulla</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+    }
+
+    async function confirmResetBonus() {
+      const userId = document.getElementById('rb-user')?.value;
+      if (!userId) return;
+      const { data: pups } = await sb.from('powerup_purchases').select('id,cost,powerup_id').eq('user_id', userId);
+      if (!pups || pups.length === 0) {
+        showToast('Nessun bonus da resettare per questo utente.', 'info');
+        document.getElementById('reset-bonus-modal')?.remove();
+        return;
+      }
+      const totalCost = pups.reduce((s, p) => s + (p.cost || 0), 0);
+      const ids = pups.map(p => p.id);
+      const { error } = await sb.from('powerup_purchases').delete().in('id', ids);
+      if (error) { showToast('Errore reset: ' + error.message, 'err'); return; }
+      const { data: prof } = await sb.from('profiles').select('nickname').eq('id', userId).maybeSingle();
+      await sb.from('admin_log').insert({
+        action: 'Reset bonus: ' + (prof?.nickname || userId) + ' — rimossi ' + pups.length + ' power-up (' + pups.map(p=>p.powerup_id).join(', ') + '), rimborsati ' + totalCost + 'cr',
+        by_user: 'admin'
+      });
+      showToast('✅ Bonus resettati! ' + totalCost + 'cr rimborsati a ' + (prof?.nickname || 'utente'), 'ok');
+      document.getElementById('reset-bonus-modal')?.remove();
+      openMod('auction');
+    }
+
     async function resetAllAuction() {
       if (!confirm('⚠️ RESET COMPLETO: azzera tutti i lotti, team, power-up, crediti e bonus di tutti i giocatori. Continuare?')) return;
       // 1. Elimina tutti i lotti (crediti, economia, aste)
