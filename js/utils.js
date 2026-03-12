@@ -1,4 +1,4 @@
-﻿    // ══════════════════ CACHE LAYER ══════════════════
+// ══════════════════ CACHE LAYER ══════════════════
     // Evita query ripetute su dati che cambiano raramente
     const _cache = {};
     const CACHE_TTL = 30000; // 30 secondi
@@ -32,5 +32,3 @@
     function fmtIt(iso) {
       return new Date(iso).toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
     }
-
-    init();
