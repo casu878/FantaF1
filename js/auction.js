@@ -1,4 +1,4 @@
-﻿    // ══════════════════ ASTA LIVE ══════════════════
+// ══════════════════ ASTA LIVE ══════════════════
 
     const AUCTION_BUDGET = 300;
 
@@ -226,19 +226,49 @@
       const { data: lot } = await sb.from('auction_lots').select('*').eq('id', lotId).single();
       if (!lot || lot.status !== 'active') { showToast('Lotto non attivo', 'err'); return; }
       if (val <= (lot.current_bid || lot.base_price)) { showToast('Offerta troppo bassa (min ' + (lot.current_bid + 1) + 'cr)', 'err'); return; }
+      const { data: uProf } = await sb.from('profiles').select('nickname').eq('id', userId).single();
+      const uNick = uProf?.nickname || 'Utente';
+
+      // ⛔ Controlla che pilota/scuderia sia svincolato (non già posseduto da altri)
+      const { data: allSoldLots } = await sb.from('auction_lots').select('winner_id,item_name,item_type').eq('status', 'sold');
+      const currentOwner = (allSoldLots || []).find(l =>
+        l.item_name === lot.item_name && ['driver','team'].includes(l.item_type) && l.winner_id && l.winner_id !== userId
+      );
+      if (currentOwner) {
+        const { data: releaseCheck } = await sb.from('auction_lots').select('id').eq('item_type','release_refund').ilike('item_name','%' + lot.item_name + '%').limit(1);
+        if (!releaseCheck || releaseCheck.length === 0) {
+          showToast('⛔ ' + lot.item_name + ' è già posseduto da un altro giocatore!', 'err'); return;
+        }
+      }
 
       // ⛔ Limite slot: max 2 piloti, max 1 scuderia per utente
       const nextRaceSlot = getNextRace();
       if (nextRaceSlot) {
         const { data: uTeam } = await sb.from('fantasy_teams').select('driver1,driver2,team1').eq('user_id', userId).eq('race_id', nextRaceSlot.id).maybeSingle();
-        const { data: uProf } = await sb.from('profiles').select('nickname').eq('id', userId).single();
-        const uNick = uProf?.nickname || 'Utente';
         if (lot.item_type === 'driver') {
           const dc = [uTeam?.driver1, uTeam?.driver2].filter(Boolean).length;
           if (dc >= 2) { showToast('⛔ ' + uNick + ' ha già 2 piloti — offerta bloccata!', 'err'); return; }
         } else if (lot.item_type === 'team') {
           if (uTeam?.team1) { showToast('⛔ ' + uNick + ' ha già una scuderia — offerta bloccata!', 'err'); return; }
         }
+      }
+
+      // ⛔ Controllo crediti: offerta + stipendi totali devono essere sostenibili
+      const { data: uLots } = await sb.from('auction_lots').select('final_price,item_type,item_name').eq('winner_id', userId).eq('status', 'sold');
+      const { data: uPupsCheck } = await sb.from('powerup_purchases').select('cost').eq('user_id', userId);
+      const _spentA = (uLots || []).filter(l => l.item_type !== 'economy_delta').reduce((s, l) => s + (l.final_price || 0), 0);
+      const _spentE = (uLots || []).filter(l => l.item_type === 'economy_delta').reduce((s, l) => s + (l.final_price || 0), 0);
+      const _spentP = (uPupsCheck || []).reduce((s, p) => s + (p.cost || 0), 0);
+      const availCr = AUCTION_BUDGET - _spentA - _spentP - _spentE;
+      if (val > availCr) { showToast('⛔ ' + uNick + ' non ha crediti sufficienti! (ha ' + availCr + 'cr, offre ' + val + 'cr)', 'err'); return; }
+      const myDrvs = (uLots || []).filter(l => l.item_type === 'driver').map(l => l.item_name);
+      const myTmN = (uLots || []).find(l => l.item_type === 'team')?.item_name || null;
+      let totSal = myDrvs.reduce((s, n) => { const d = DRIVERS_2026.find(x => x.name === n); return s + (d?.salary || 0); }, 0);
+      if (myTmN) totSal += (TEAM_SALARIES_2026[myTmN] || 0);
+      const newSal = lot.item_type === 'driver' ? (DRIVERS_2026.find(d => d.name === lot.item_name)?.salary || 0) : (TEAM_SALARIES_2026[lot.item_name] || 0);
+      totSal += newSal;
+      if ((availCr - val) < totSal) {
+        showToast('⚠️ ' + uNick + ': dopo l\'offerta avrà ' + (availCr - val) + 'cr ma gli stipendi totali sono ' + totSal + 'cr/gara — bloccato!', 'err'); return;
       }
 
       await sb.from('auction_lots').update({ current_bid: val, current_bidder: userId, updated_at: new Date().toISOString() }).eq('id', lotId);
@@ -251,7 +281,6 @@
 
 
 
-
     async function submitMyBid(lotId) {
       const val = parseInt(document.getElementById('my_bid_input')?.value);
       if (!val || val < 1) { showToast('Inserisci un\'offerta valida', 'err'); return; }
@@ -259,38 +288,73 @@
       if (!lot || lot.status !== 'active') { showToast('Lotto non attivo', 'err'); return; }
       if (val <= (lot.current_bid || lot.base_price)) { showToast('Offerta troppo bassa (min ' + (lot.current_bid + 1) + 'cr)', 'err'); return; }
 
+      // ⛔ Controlla che pilota/scuderia sia svincolato (non già posseduto da altri)
+      const { data: allSoldMy } = await sb.from('auction_lots').select('winner_id,item_name,item_type').eq('status', 'sold');
+      const ownerMy = (allSoldMy || []).find(l =>
+        l.item_name === lot.item_name && ['driver','team'].includes(l.item_type) && l.winner_id && l.winner_id !== currentUser.id
+      );
+      if (ownerMy) {
+        const { data: relCheck } = await sb.from('auction_lots').select('id').eq('item_type','release_refund').ilike('item_name','%' + lot.item_name + '%').limit(1);
+        if (!relCheck || relCheck.length === 0) {
+          showToast('⛔ ' + lot.item_name + ' è già posseduto da un altro giocatore!', 'err'); return;
+        }
+      }
+
       // ⛔ Limite slot: max 2 piloti, max 1 scuderia
       const nextRaceSlot2 = getNextRace();
       if (nextRaceSlot2) {
         const { data: mySlotTeam } = await sb.from('fantasy_teams').select('driver1,driver2,team1').eq('user_id', currentUser.id).eq('race_id', nextRaceSlot2.id).maybeSingle();
         if (lot.item_type === 'driver') {
           const dc = [mySlotTeam?.driver1, mySlotTeam?.driver2].filter(Boolean).length;
-          if (dc >= 2) { showToast('⛔ Hai già 2 piloti — non puoi offrire su altri piloti!', 'err'); return; }
+          if (dc >= 2) { showToast('⛔ Hai già 2 piloti — non puoi offrire!', 'err'); return; }
         } else if (lot.item_type === 'team') {
-          if (mySlotTeam?.team1) { showToast('⛔ Hai già una scuderia — non puoi offrire su altre scuderie!', 'err'); return; }
+          if (mySlotTeam?.team1) { showToast('⛔ Hai già una scuderia — non puoi offrire!', 'err'); return; }
         }
       }
 
-      // Salva come "proposta utente" sull'asta — l'admin deve confermare
+      // ⛔ Controllo crediti + stipendi
+      const { data: myLotsC } = await sb.from('auction_lots').select('final_price,item_type,item_name').eq('winner_id', currentUser.id).eq('status', 'sold');
+      const { data: myPupsC } = await sb.from('powerup_purchases').select('cost').eq('user_id', currentUser.id);
+      const _mA = (myLotsC || []).filter(l => l.item_type !== 'economy_delta').reduce((s, l) => s + (l.final_price || 0), 0);
+      const _mE = (myLotsC || []).filter(l => l.item_type === 'economy_delta').reduce((s, l) => s + (l.final_price || 0), 0);
+      const _mP = (myPupsC || []).reduce((s, p) => s + (p.cost || 0), 0);
+      const myAvailCr = AUCTION_BUDGET - _mA - _mP - _mE;
+      if (val > myAvailCr) { showToast('⛔ Crediti insufficienti! (hai ' + myAvailCr + 'cr, offri ' + val + 'cr)', 'err'); return; }
+      const _myD = (myLotsC || []).filter(l => l.item_type === 'driver').map(l => l.item_name);
+      const _myT = (myLotsC || []).find(l => l.item_type === 'team')?.item_name || null;
+      let _myS = _myD.reduce((s, n) => { const d = DRIVERS_2026.find(x => x.name === n); return s + (d?.salary || 0); }, 0);
+      if (_myT) _myS += (TEAM_SALARIES_2026[_myT] || 0);
+      const _nS = lot.item_type === 'driver' ? (DRIVERS_2026.find(d => d.name === lot.item_name)?.salary || 0) : (TEAM_SALARIES_2026[lot.item_name] || 0);
+      _myS += _nS;
+      if ((myAvailCr - val) < _myS) {
+        showToast('⚠️ Dopo questa offerta avresti ' + (myAvailCr - val) + 'cr ma gli stipendi totali sono ' + _myS + 'cr/gara — bloccato!', 'err'); return;
+      }
+
       await sb.from('auction_lots').update({ current_bid: val, current_bidder: currentUser.id, updated_at: new Date().toISOString() }).eq('id', lotId);
       await sb.from('admin_log').insert({ action: 'Proposta ' + val + 'cr su ' + lot.item_name + ' da ' + currentProfile?.nickname, by_user: currentProfile?.nickname || 'user' });
       showToast('Offerta ' + val + 'cr proposta — attendi conferma admin!', 'ok');
       openMod('auction');
     }
-
     async function resetAllAuction() {
-      if (!confirm('⚠️ RESET COMPLETO ASTA: cancellerà tutti i lotti, svuoterà i team di tutti gli utenti e restituirà i crediti. Continuare?')) return;
-      // 1. Elimina tutti i lotti
+      if (!confirm('⚠️ RESET COMPLETO: azzera tutti i lotti, team, power-up, crediti e bonus di tutti i giocatori. Continuare?')) return;
+      // 1. Elimina tutti i lotti (crediti, economia, aste)
       await sb.from('auction_lots').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       // 2. Reset stato asta
       await sb.from('auction_state').upsert({ id: 1, market_open: false, active_lot: null, updated_at: new Date().toISOString() }, { onConflict: 'id' });
-      // 3. Svuota i team di tutti gli utenti (driver1/driver2/team1)
-      const nextRace = getNextRace();
-      if (nextRace) {
-        await sb.from('fantasy_teams').update({ driver1: null, driver2: null, driver3: null, team1: null, saved_at: new Date().toISOString() }).eq('race_id', nextRace.id);
+      // 3. Svuota TUTTI i team di tutti gli utenti per TUTTI i GP
+      await sb.from('fantasy_teams').update({ driver1: null, driver2: null, driver3: null, team1: null, saved_at: new Date().toISOString() }).neq('race_id', '____');
+      // 4. Elimina tutti i power-up acquistati
+      await sb.from('powerup_purchases').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      // 5. Reset punti tutti i profili
+      const { data: allProfiles } = await sb.from('profiles').select('id');
+      for (const p of (allProfiles || [])) {
+        await sb.from('profiles').update({ total_pts: 0, gps_done: 0 }).eq('id', p.id);
       }
-      await sb.from('admin_log').insert({ action: 'RESET COMPLETO ASTA — tutti i team svuotati e crediti restituiti', by_user: currentProfile?.nickname || 'admin' });
-      showToast('✅ Asta resettata — crediti restituiti a tutti!', 'ok');
+      // 6. Elimina gp_scores
+      await sb.from('gp_scores').delete().neq('race_id', '____');
+      invalidateCache();
+      await sb.from('admin_log').insert({ action: 'RESET COMPLETO — team, crediti, piloti, scuderie, power-up e bonus azzerati per tutti', by_user: currentProfile?.nickname || 'admin' });
+      showToast('✅ Reset completo! Crediti, piloti, scuderie e bonus azzerati.', 'ok');
       openMod('auction');
     }
 
@@ -871,6 +935,3 @@
       showToast(`✅ ${itemName} svincolato! +${currentValue}cr`, 'gold');
       openReleasePanel();
     }
-
-
-
