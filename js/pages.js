@@ -1,4 +1,4 @@
-﻿    // ══════════════════ HOME ══════════════════
+// ══════════════════ HOME ══════════════════
 
     function getNextRace() { const now = Date.now(); return CALENDAR_2026.find(r => new Date(r.sessions.race).getTime() > now); }
     function getActiveRace() {
@@ -115,7 +115,13 @@
           elGrid.style.display = 'none';
         } else if (targetTime) {
           const diff = targetTime - now;
-          if (diff <= 0) { tick(); return; }
+          if (diff <= 0) {
+            // Countdown arrivato a 0 — se era per le qualifiche, paga gli stipendi
+            if (state === 'before_qual') {
+              autoDeductSalaries(next.id).catch(console.error);
+            }
+            tick(); return;
+          }
           const d = Math.floor(diff / 86400000), h = Math.floor((diff % 86400000) / 3600000),
             m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000);
           elLabel.innerHTML = `<span style="font-size:10px;letter-spacing:3px;color:var(--t3);text-transform:uppercase">${labelText}</span>`;
@@ -519,4 +525,3 @@
       🔢 Risultati: ${res.p1 || '?'} · ${res.p2 || '?'} · ${res.p3 || '?'} · FL: ${res.fastest || '?'} · SC: ${res.sc_count || 0}
     </div>`;
     }
-
