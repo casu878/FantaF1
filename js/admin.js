@@ -1,4 +1,4 @@
-﻿    // ══════════════════ ADMIN ══════════════════
+// ══════════════════ ADMIN ══════════════════
 
     async function renderAdminLog() {
       if (!sb) return;
@@ -1063,15 +1063,112 @@
 
     // ══════════════════ FINE MERCATO BUSTE ══════════════════
 
-    async function computeAndSavePts(raceId, result) {
+    // ══════════════════ STIPENDI AUTO (all'inizio qualifiche) ══════════════════
+    // Chiamata automaticamente quando il countdown qualifiche arriva a 0.
+    // Scala gli stipendi a tutti. Se un utente va in negativo → insolvente per questo GP:
+    // non guadagna punti, crediti, né li perde. I pronostici non valgono.
+    async function autoDeductSalaries(raceId) {
+      // Controlla se già eseguito per questo GP
+      const { data: prevLog } = await sb.from('admin_log').select('id')
+        .ilike('action', 'Stipendi GP ' + raceId + ':%').limit(1);
+      if (prevLog && prevLog.length > 0) return; // già fatto
+
+      const { data: users } = await sb.from('profiles').select('id,nickname');
+      // Carica i team che gareggeranno (il team più recente di ciascun utente)
+      const { data: raceTeams } = await sb.from('fantasy_teams').select('*').eq('race_id', raceId);
+      // Fallback: ultimo team salvato se non esiste per questo GP
+      const { data: allTeams } = await sb.from('fantasy_teams').select('*').order('saved_at', { ascending: false });
+      const teamMap = {};
+      (allTeams || []).forEach(t => { if (!teamMap[t.user_id]) teamMap[t.user_id] = t; });
+      (raceTeams || []).forEach(t => { teamMap[t.user_id] = t; });
+
+      for (const u of (users || [])) {
+        const myTeam = teamMap[u.id];
+        const myDrivers = [myTeam?.driver1, myTeam?.driver2].filter(Boolean);
+        const myTeamName = myTeam?.team1 || null;
+
+        let stipendi = myDrivers.reduce((s, n) => {
+          const d = DRIVERS_2026.find(x => x.name === n); return s + (d?.salary || 0);
+        }, 0);
+        if (myTeamName) stipendi += (TEAM_SALARIES_2026[myTeamName] || 0);
+
+        if (stipendi === 0) continue; // nessun team, nessun stipendio
+
+        // Calcola crediti attuali
+        const { data: uLots } = await sb.from('auction_lots').select('final_price,item_type')
+          .eq('winner_id', u.id).eq('status', 'sold');
+        const { data: uPups } = await sb.from('powerup_purchases').select('cost').eq('user_id', u.id);
+        const spentA = (uLots || []).filter(l => l.item_type !== 'economy_delta').reduce((s, l) => s + (l.final_price || 0), 0);
+        const spentE = (uLots || []).filter(l => l.item_type === 'economy_delta').reduce((s, l) => s + (l.final_price || 0), 0);
+        const spentP = (uPups || []).reduce((s, p) => s + (p.cost || 0), 0);
+        const currentCredits = AUCTION_BUDGET - spentA - spentP - spentE;
+        const newCredits = currentCredits - stipendi;
+
+        if (newCredits < 0) {
+          // ⚠️ INSOLVENTE: non paga, viene escluso dal GP
+          await sb.from('gp_exclusions').upsert({
+            user_id: u.id,
+            race_id: raceId,
+            reason: 'Insolvente: crediti ' + currentCredits + 'cr, stipendi ' + stipendi + 'cr',
+            excluded_at: new Date().toISOString()
+          }, { onConflict: 'user_id,race_id' });
+          await sb.from('admin_log').insert({
+            action: 'Stipendi GP ' + raceId + ': ' + u.nickname + ' INSOLVENTE (ha ' + currentCredits + 'cr, stipendi ' + stipendi + 'cr) — escluso dal GP',
+            by_user: 'system'
+          });
+        } else {
+          // ✅ Paga gli stipendi
+          await sb.from('auction_lots').insert({
+            item_name: 'STIPENDI:' + raceId + ':' + u.id,
+            item_type: 'economy_delta',
+            status: 'sold',
+            base_price: 0,
+            current_bid: stipendi,
+            final_price: stipendi, // positivo = spesa (riduce crediti)
+            winner_id: u.id,
+            notes: 'Stipendi GP ' + raceId + ': ' + stipendi + 'cr (piloti: ' + myDrivers.join(', ') + (myTeamName ? ', scuderia: ' + myTeamName : '') + ')'
+          });
+          await sb.from('admin_log').insert({
+            action: 'Stipendi GP ' + raceId + ': ' + u.nickname + ' -' + stipendi + 'cr (rimane ' + newCredits + 'cr)',
+            by_user: 'system'
+          });
+        }
+      }
+      // Mostra notifica solo se siamo nell'app
+      if (typeof showToast === 'function') showToast('💸 Stipendi GP scalati automaticamente!', 'ok');
+    }
+
+    // Controlla se un utente è escluso da un GP (insolvente)
+    async function isUserExcluded(userId, raceId) {
+      try {
+        const { data } = await sb.from('gp_exclusions').select('id').eq('user_id', userId).eq('race_id', raceId).maybeSingle();
+        return !!data;
+      } catch { return false; }
+    }
+
+        async function computeAndSavePts(raceId, result) {
       const [{ data: teams }, { data: preds }, { data: allPups }] = await Promise.all([
         sb.from('fantasy_teams').select('*').eq('race_id', raceId),
         sb.from('predictions').select('*').eq('race_id', raceId),
         sb.from('powerup_purchases').select('*').eq('race_id', raceId).eq('activated', true)
       ]);
 
+      // Carica esclusioni (utenti insolventi) per questo GP
+      const { data: exclusions } = await sb.from('gp_exclusions').select('user_id').eq('race_id', raceId);
+      const excludedSet = new Set((exclusions || []).map(e => e.user_id));
+
       let processed = 0;
       for (const team of (teams || [])) {
+        // ⛔ Utente insolvente: non calcolare punti né crediti
+        if (excludedSet.has(team.user_id)) {
+          await sb.from('gp_scores').upsert({
+            user_id: team.user_id, race_id: raceId,
+            fantasy_pts: 0, predict_pts: 0, total_pts: 0,
+            breakdown: { excluded: true, reason: 'Insolvente — stipendi non pagati' },
+            computed_at: new Date().toISOString()
+          }, { onConflict: 'user_id,race_id' });
+          continue; // salta completamente
+        }
         const pred = (preds || []).find(p => p.user_id === team.user_id);
 
         // Carica power-up attivi per questo utente/GP
@@ -1097,17 +1194,16 @@
           computed_at: new Date().toISOString()
         }, { onConflict: 'user_id,race_id' });
 
-        // Aggiorna profilo — doppio tentativo (RPC → update diretto)
-        const { error: rpcErr } = await sb.rpc('increment_pts', { uid: team.user_id, add_pts: total, add_gps: 1 });
-        if (rpcErr) {
-          console.warn('[computeAndSavePts] RPC fallita per', team.user_id, '— uso update diretto');
-          const { data: prof, error: profErr } = await sb.from('profiles').select('total_pts,gps_done').eq('id', team.user_id).single();
-          if (!profErr && prof) {
-            const { error: updErr } = await sb.from('profiles')
-              .update({ total_pts: (prof.total_pts || 0) + total, gps_done: (prof.gps_done || 0) + 1 })
-              .eq('id', team.user_id);
-            if (updErr) console.error('[computeAndSavePts] update profilo fallito:', updErr);
-          }
+        // Aggiorna profilo: somma diretta (non RPC per evitare doppio conteggio)
+        // Prima controlla se questo GP era già calcolato (gp_scores) per non aggiungere due volte
+        const { data: existingScore } = await sb.from('gp_scores').select('total_pts').eq('user_id', team.user_id).eq('race_id', raceId).maybeSingle();
+        const prevTotal = existingScore?.total_pts || 0;
+        const ptsDiff = total - prevTotal; // differenza rispetto al calcolo precedente
+        const { data: prof } = await sb.from('profiles').select('total_pts,gps_done').eq('id', team.user_id).single();
+        if (prof) {
+          const newTotalPts = (prof.total_pts || 0) + ptsDiff;
+          const newGpsDone = existingScore ? prof.gps_done : (prof.gps_done || 0) + 1;
+          await sb.from('profiles').update({ total_pts: Math.max(0, newTotalPts), gps_done: newGpsDone }).eq('id', team.user_id);
         }
         processed++;
       }
@@ -1122,7 +1218,6 @@
     async function autoApplyEconomy(raceId, result) {
       try {
         const { data: users } = await sb.from("profiles").select("id,nickname");
-        const { data: lots } = await sb.from("auction_lots").select("*").eq("status", "sold");
         // Controlla se economia gia applicata per questo GP
         const { data: prevLog } = await sb.from("admin_log").select("id").ilike("action", "Economia GP " + raceId + ":%").limit(1);
         if (prevLog && prevLog.length > 0) {
@@ -1134,10 +1229,28 @@
         const gpIndex = doneRaceIds.indexOf(raceId);
         const isFirstGP = gpIndex === 0;
 
+        // Carica tutti i team per questo GP (team effettivo che ha gareggiato)
+        const { data: raceTeams } = await sb.from("fantasy_teams").select("*").eq("race_id", raceId);
+        const raceTeamMap = {};
+        (raceTeams || []).forEach(t => { raceTeamMap[t.user_id] = t; });
+
+        // Carica esclusioni per questo GP
+        const { data: ecoExclusions } = await sb.from('gp_exclusions').select('user_id').eq('race_id', raceId);
+        const ecoExcludedSet = new Set((ecoExclusions || []).map(e => e.user_id));
+
         for (const u of (users || [])) {
-          const won = (lots || []).filter(l => l.winner_id === u.id && l.item_type !== "economy_delta");
-          const myDrivers = won.filter(l => l.item_type === "driver").map(l => l.item_name);
-          const myTeam = won.find(l => l.item_type === "team")?.item_name || null;
+          // ⛔ Utente insolvente: nessun guadagno né stipendio (già non ha pagato)
+          if (ecoExcludedSet.has(u.id)) {
+            await sb.from("admin_log").insert({
+              action: "Economia GP " + raceId + ": " + u.nickname + " ESCLUSO (insolvente) — nessun guadagno",
+              by_user: "system"
+            });
+            continue;
+          }
+          // Usa il team che ha effettivamente gareggiato in questo GP
+          const raceTeam = raceTeamMap[u.id];
+          const myDrivers = [raceTeam?.driver1, raceTeam?.driver2].filter(Boolean);
+          const myTeam = raceTeam?.team1 || null;
 
           let stipendi = 0, guadagni = 0;
           myDrivers.forEach(dName => {
@@ -1158,8 +1271,9 @@
 
           const delta = guadagni - stipendi;
 
-          // Calcola crediti attuali
-          const spentAuction = won.reduce((s, l) => s + (l.final_price || 0), 0);
+          // Calcola crediti attuali (da auction_lots)
+          const { data: uLotsEco } = await sb.from("auction_lots").select("final_price,item_type").eq("winner_id", u.id).eq("status", "sold");
+          const spentAuction = (uLotsEco || []).filter(l => l.item_type !== "economy_delta").reduce((s, l) => s + (l.final_price || 0), 0);
           const { data: pups } = await sb.from("powerup_purchases").select("cost").eq("user_id", u.id);
           const spentPU = (pups || []).reduce((s, p) => s + (p.cost || 0), 0);
           // Somma anche lotti economia precedenti (delta negativi aggiungono, positivi tolgono)
@@ -1318,12 +1432,19 @@
       }).join('')}
     </details>
 
-    <div class="stitle" style="margin-top:16px">Qualifiche (Q3P1-P10)</div>
-    <div class="fg"><label>📍 Q3 P2 griglia (seconda in qualifica)</label>${dOpt('p2qual', existing?.p2_qual || '')}</div>
-    <div class="fg"><label>📍 Qualifiche P1-P10</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        ${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => `<div><div style="font-size:9px;color:var(--t3);margin-bottom:3px">Q${i}</div>${dOpt('qual' + i, existing?.['qual_p' + i] || '')}</div>`).join('')}
-      </div>
+    <div class="stitle" style="margin-top:16px">🏁 Qualifiche Completa (Q1/Q2/Q3)</div>
+    <div style="font-size:10px;color:var(--t3);margin-bottom:8px">Inserisci i piloti in ordine di eliminazione: Q1 elimina P16-20, Q2 elimina P11-15, Q3 determina P1-P10.</div>
+    <div style="font-size:11px;font-weight:700;color:var(--green);margin:6px 0 4px">🟢 Q3 — Top 10 (P1-P10)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px">
+      ${[1,2,3,4,5,6,7,8,9,10].map(i => '<div><div style="font-size:9px;color:var(--green);margin-bottom:3px">Q3 P' + i + '</div>' + dOpt('qual' + i, existing?.['qual_p' + i] || '') + '</div>').join('')}
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--yellow);margin:6px 0 4px">🟡 Q2 — Eliminati (P11-P15)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px">
+      ${[11,12,13,14,15].map(i => '<div><div style="font-size:9px;color:var(--yellow);margin-bottom:3px">Q2 P' + i + '</div>' + dOpt('q2p' + i, existing?.['q2_p' + i] || '') + '</div>').join('')}
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--red);margin:6px 0 4px">🔴 Q1 — Eliminati (P16-P20)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:10px">
+      ${[16,17,18,19,20].map(i => '<div><div style="font-size:9px;color:var(--t3);margin-bottom:3px">Q1 P' + i + '</div>' + dOpt('q1p' + i, existing?.['q1_p' + i] || '') + '</div>').join('')}
     </div>
     ${race?.sprint ? `
     <div class="fg"><label>🟣 Sprint Vincitore</label>${dOpt('spr', existing?.sprint_win)}</div>
@@ -1372,6 +1493,10 @@
         qual_p4: g('qual4') || null, qual_p5: g('qual5') || null, qual_p6: g('qual6') || null,
         qual_p7: g('qual7') || null, qual_p8: g('qual8') || null, qual_p9: g('qual9') || null,
         qual_p10: g('qual10') || null,
+        q2_p11: g('q2p11') || null, q2_p12: g('q2p12') || null, q2_p13: g('q2p13') || null,
+        q2_p14: g('q2p14') || null, q2_p15: g('q2p15') || null,
+        q1_p16: g('q1p16') || null, q1_p17: g('q1p17') || null, q1_p18: g('q1p18') || null,
+        q1_p19: g('q1p19') || null, q1_p20: g('q1p20') || null,
         sprint_win: race?.sprint ? g('spr') : null,
         sprint_p2: race?.sprint ? g('spr2') : null,
         sprint_p3: race?.sprint ? g('spr3') : null,
@@ -1439,4 +1564,3 @@
       openMod('users');
       showToast('✅ Punti resettati', 'ok');
     }
-
