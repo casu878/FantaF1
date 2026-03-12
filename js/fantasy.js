@@ -1,4 +1,4 @@
-﻿    // ══════════════════ FANTASY TEAM ══════════════════
+// ══════════════════ FANTASY TEAM ══════════════════
 
     let fantState = { driver1: null, driver2: null, driver3: null, team1: null, team2: null, locked: false };
 
@@ -9,6 +9,28 @@
       // Mostra skeleton immediato
       if (!el.innerHTML.trim() || el.innerHTML.includes('Caricamento')) {
         el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--t3)"><div style="font-size:24px;margin-bottom:8px">⟳</div><div style="font-size:12px;letter-spacing:1px">Caricamento team...</div></div>';
+      }
+
+      // ⛔ Controlla se l'utente è insolvente per questo GP
+      if (typeof isUserExcluded === 'function') {
+        const excluded = await isUserExcluded(currentUser.id, next.id);
+        if (excluded) {
+          el.innerHTML = `
+            <div style="font-family:'Exo 2',sans-serif;font-weight:900;font-size:18px;text-transform:uppercase;margin-bottom:10px">
+              ${next.flag} R${next.round} · ${next.name}
+            </div>
+            <div class="status-banner" style="background:rgba(180,0,0,.12);border-color:#aa0000;color:#ff7070;margin-bottom:12px">
+              ⛔ <strong>Escluso da questo GP</strong><br>
+              <span style="font-size:11px;line-height:1.6">
+                Non avevi abbastanza crediti per pagare gli stipendi all'inizio delle qualifiche.<br>
+                Non guadagni punti, crediti, e i pronostici non valgono per questo weekend.<br>
+                <strong style="color:var(--t1)">Riorganizza il team prima del prossimo GP!</strong>
+              </span>
+            </div>
+            <div id="all-teams-box"><div style="color:var(--t3);font-size:12px;text-align:center;padding:16px">⟳ Caricamento...</div></div>`;
+          loadAllTeams(next.id);
+          return;
+        }
       }
 
       // Carica il team dell'utente con cache
@@ -420,6 +442,19 @@
       if (!el.innerHTML.trim()) {
         el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--t3)"><div style="font-size:24px;margin-bottom:8px">⟳</div><div style="font-size:12px;letter-spacing:1px">Caricamento pronostici...</div></div>';
       }
+      // ⛔ Controlla se l'utente è insolvente per questo GP
+      if (typeof isUserExcluded === 'function') {
+        const excluded = await isUserExcluded(currentUser.id, next.id);
+        if (excluded) {
+          el.innerHTML = `<div class="status-banner" style="background:rgba(180,0,0,.12);border-color:#aa0000;color:#ff7070;margin-bottom:12px">
+            ⛔ <strong>Escluso da questo GP</strong><br>
+            <span style="font-size:11px;line-height:1.6">Non avevi abbastanza crediti per pagare gli stipendi all'inizio delle qualifiche.<br>
+            I pronostici e i punti fantasy non valgono per questo weekend.<br>
+            Riorganizza il team per il prossimo GP!</span>
+          </div>`;
+          return;
+        }
+      }
       // 🔒 Pronostici si bloccano all'inizio delle QUALIFICHE (Q1), non della gara
       const qualLockTime = new Date(next.sessions.qual);
       const isLocked = qualLockTime <= new Date();
@@ -715,4 +750,3 @@
       showToast('✅ Pronostico salvato!', 'ok');
       renderPredict();
     }
-
