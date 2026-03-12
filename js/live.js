@@ -1,4 +1,4 @@
-﻿    // ══════════════════ OpenF1 API STATUS CHECK ══════════════════
+// ══════════════════ OpenF1 API STATUS CHECK ══════════════════
 
     async function checkOpenF1Status() {
       const pill = document.getElementById('api-status-pill');
@@ -398,27 +398,60 @@
 
       const res = await sb.from('race_results').select('*').eq('race_id', raceId).maybeSingle();
       const r = res?.data;
-      // Considera qualifiche disponibili se c'è almeno qual_p1 o pole
       if (!r?.qual_p1 && !r?.pole) {
         el.innerHTML = '<div style="color:var(--t3);text-align:center;padding:16px;font-size:12px">Qualifiche non ancora disponibili</div>';
         return;
       }
-      // Se qual_p1..p10 non sono popolati ma abbiamo pole, usiamo pole come griglia parziale
-      const quali = r.qual_p1
-        ? [r.qual_p1, r.qual_p2, r.qual_p3, r.qual_p4, r.qual_p5, r.qual_p6, r.qual_p7, r.qual_p8, r.qual_p9, r.qual_p10].filter(Boolean)
-        : (r.pole ? [r.pole] : []);
-      const myDrivers = new Set([fantState?.driver1, fantState?.driver2, fantState?.driver3].filter(Boolean));
-      el.innerHTML = `<div style="font-size:10px;color:var(--t3);margin-bottom:8px">📋 Griglia di partenza — ${r.pole ? 'Pole: <strong style="color:var(--yellow)">' + r.pole + '</strong>' : ''}</div>` +
-        quali.map((name, i) => {
-          const drv = DRIVERS_2026.find(d => d.name === name);
-          const isMine = myDrivers.has(name);
-          return `<div class="posrow${i < 3 ? ' p' + (i + 1) : ''}${isMine ? ' myd' : ''}">
-            <div class="posnum">${i + 1}</div>
-            <div style="width:3px;height:28px;background:#${drv?.tc || '888'};border-radius:2px;flex-shrink:0"></div>
-            <div style="flex:1"><div class="posname">${drv?.abbr || name} <span style="font-weight:400">${name.split(' ').slice(-1)[0]}</span>${isMine ? ' <span style="color:var(--red);font-size:9px">◀</span>' : ''}</div>
-            <div class="posteam" style="color:#${drv?.tc || '888'};font-size:9px">${drv?.team || '—'}</div></div>
-          </div>`;
-        }).join('');
+
+      const myDrivers = new Set([fantState?.driver1, fantState?.driver2].filter(Boolean));
+
+      function drvRow(name, pos, badge) {
+        if (!name) return '';
+        const drv = DRIVERS_2026.find(d => d.name === name);
+        const isMine = myDrivers.has(name);
+        return `<div class="posrow${pos <= 3 ? ' p' + pos : ''}${isMine ? ' myd' : ''}" style="margin-bottom:3px">
+          <div class="posnum" style="font-size:11px;min-width:22px">P${pos}</div>
+          ${badge ? `<div style="font-size:9px;font-weight:900;padding:2px 5px;border-radius:3px;background:${badge.bg};color:${badge.color};flex-shrink:0;letter-spacing:1px">${badge.text}</div>` : ''}
+          <div style="width:3px;height:26px;background:#${drv?.tc || '888'};border-radius:2px;flex-shrink:0"></div>
+          <div style="flex:1">
+            <div class="posname" style="font-size:12px">${drv?.abbr || name} <span style="font-weight:400">${name.split(' ').slice(-1)[0]}</span>${isMine ? ' <span style="color:var(--red);font-size:9px">◀</span>' : ''}</div>
+            <div class="posteam" style="color:#${drv?.tc || '888'};font-size:9px">${drv?.team || '—'}</div>
+          </div>
+        </div>`;
+      }
+
+      const q3 = [r.qual_p1,r.qual_p2,r.qual_p3,r.qual_p4,r.qual_p5,r.qual_p6,r.qual_p7,r.qual_p8,r.qual_p9,r.qual_p10].filter(Boolean);
+      const q2 = [r.q2_p11,r.q2_p12,r.q2_p13,r.q2_p14,r.q2_p15].filter(Boolean);
+      const q1 = [r.q1_p16,r.q1_p17,r.q1_p18,r.q1_p19,r.q1_p20].filter(Boolean);
+
+      let html = '';
+
+      // Header pole
+      if (r.pole) html += `<div style="font-size:10px;color:var(--t3);margin-bottom:10px">🏆 Pole: <strong style="color:var(--yellow)">${r.pole}</strong> &nbsp;·&nbsp; +7pts fantasy</div>`;
+
+      // Q3 section
+      if (q3.length) {
+        html += `<div style="font-size:9px;font-weight:900;letter-spacing:2px;color:var(--green);text-transform:uppercase;margin:8px 0 5px;padding:3px 7px;background:#001a0a;border-left:3px solid var(--green);border-radius:0 4px 4px 0">🟢 Q3 — Top 10 &nbsp;<span style="font-weight:400;color:var(--t3)">+5 pts · +7 pole</span></div>`;
+        q3.forEach((name, i) => { html += drvRow(name, i + 1, i === 0 ? {bg:'#332200',color:'var(--yellow)',text:'POLE'} : null); });
+      } else if (r.pole) {
+        // fallback solo pole
+        html += `<div style="font-size:9px;font-weight:900;letter-spacing:2px;color:var(--green);text-transform:uppercase;margin:8px 0 5px;padding:3px 7px;background:#001a0a;border-left:3px solid var(--green);border-radius:0 4px 4px 0">🟢 Q3</div>`;
+        html += drvRow(r.pole, 1, {bg:'#332200',color:'var(--yellow)',text:'POLE'});
+      }
+
+      // Q2 section
+      if (q2.length) {
+        html += `<div style="font-size:9px;font-weight:900;letter-spacing:2px;color:var(--yellow);text-transform:uppercase;margin:10px 0 5px;padding:3px 7px;background:#1a1400;border-left:3px solid var(--yellow);border-radius:0 4px 4px 0">🟡 Q2 — Eliminati &nbsp;<span style="font-weight:400;color:var(--t3)">+3 pts</span></div>`;
+        q2.forEach((name, i) => { html += drvRow(name, i + 11, null); });
+      }
+
+      // Q1 section
+      if (q1.length) {
+        html += `<div style="font-size:9px;font-weight:900;letter-spacing:2px;color:#888;text-transform:uppercase;margin:10px 0 5px;padding:3px 7px;background:#111;border-left:3px solid #555;border-radius:0 4px 4px 0">🔴 Q1 — Eliminati &nbsp;<span style="font-weight:400;color:var(--t3)">0 pts</span></div>`;
+        q1.forEach((name, i) => { html += drvRow(name, i + 16, null); });
+      }
+
+      el.innerHTML = html || '<div style="color:var(--t3);text-align:center;padding:16px;font-size:12px">Dati qualifiche non disponibili</div>';
     }
 
     async function renderStoredRaceResults() {
@@ -787,4 +820,3 @@
       if (el('cdm')) el('cdm').textContent = String(m).padStart(2, '0');
       if (el('cds')) el('cds').textContent = String(s).padStart(2, '0');
     }
-
