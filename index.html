@@ -1,0 +1,998 @@
+﻿<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>FANTA F1 2026</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,800&family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+  <div id="splash">
+    <div class="splash-logo">FANTA<br><span>F1</span></div>
+    <div class="splash-sub">Lega Privata · Stagione 2026</div>
+    <div class="splash-spin"></div>
+    <div id="splash-status" style="font-size:10px;color:var(--t3);margin-top:8px;letter-spacing:1px">Connessione...
+    </div>
+    <button id="splash-skip" onclick="showAuth()"
+      style="display:none;margin-top:16px;background:transparent;border:1px solid var(--t3);color:var(--t3);padding:8px 20px;border-radius:6px;cursor:pointer;font-family:'Exo 2',sans-serif;font-weight:700;font-size:12px;letter-spacing:2px;text-transform:uppercase">
+      Accedi manualmente →
+    </button>
+  </div>
+
+  <div id="auth">
+    <div class="logo">FANTA<br><span>F1</span></div>
+    <div class="logo-sub">Lega Privata · Stagione 2026</div>
+    <div class="acard">
+      <div class="atabs">
+        <button class="atab on" onclick="swAuth('login')">Accedi</button>
+        <button class="atab" onclick="swAuth('reg')">Registrati</button>
+      </div>
+      <div id="lform">
+        <div class="fg"><label>Email</label><input class="fi" type="email" id="lemail" placeholder="nome@email.com"
+            autocomplete="email"></div>
+        <div class="fg"><label>Password</label><input class="fi" type="password" id="lpass" placeholder="••••••••"
+            autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <div id="lerr" class="errmsg err"></div>
+        <button class="btn btn-r btn-w" id="login-btn" onclick="doLogin()" style="margin-top:6px">Entra →</button>
+      </div>
+      <div id="rform" class="hidden">
+        <div id="reg-inputs">
+          <div class="fg"><label>Nickname</label><input class="fi" type="text" id="rnick" placeholder="Il tuo nickname"
+              maxlength="20" autocomplete="off"></div>
+          <div class="fg"><label>Email</label><input class="fi" type="email" id="remail" placeholder="nome@email.com"
+              autocomplete="email"></div>
+          <div class="fg"><label>Password</label><input class="fi" type="password" id="rpass"
+              placeholder="Minimo 6 caratteri" autocomplete="new-password"></div>
+          <div class="fg"><label>🔑 Codice Lega</label><input class="fi" type="text" id="rcode"
+              placeholder="Chiedi all'admin"></div>
+          <div id="rerr" class="errmsg err"></div>
+          <button class="btn btn-r btn-w" id="reg-btn" onclick="doRegister()" style="margin-top:6px">Crea Account
+            →</button>
+        </div>
+        <div id="email-confirm-msg" class="email-confirm-box hidden">
+          <div class="big-emoji">📧</div>
+          <h3>Controlla la tua email!</h3>
+          <p>Link di conferma inviato a:<br><strong id="confirm-email-shown" style="color:var(--t1)"></strong></p>
+          <div class="hint">💡 Non trovi l'email? Controlla lo Spam.</div>
+          <button class="btn btn-g btn-w" onclick="swAuth('login')" style="margin-top:14px">Vai al Login →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="app">
+    <div class="rstripe"></div>
+    <div class="topbar">
+      <div class="tblogo">FANTA<span>F1</span> <span style="font-size:13px;color:var(--t3);font-weight:400">2026</span>
+      </div>
+      <div class="tbr">
+        <div class="ldot hidden" id="ldot"></div>
+        <div id="api-status-pill" class="api-pill loading">⟳ API</div>
+        <div class="av" id="uav" title="Profilo" onclick="navTo('profile')">?</div>
+      </div>
+    </div>
+
+    <div class="page on" id="pg-home">
+      <div id="cdbox"></div>
+      <div class="stitle">🏆 Classifica Lega</div>
+      <div id="home-lb"></div>
+      <button class="btn btn-g btn-w" style="margin-top:8px" onclick="navTo('stand')">Vedi classifica completa
+        →</button>
+    </div>
+
+    <div class="page" id="pg-fantasy">
+      <div style="display:flex;gap:6px;margin-bottom:11px;flex-wrap:wrap">
+        <button class="btn btn-r btn-sm" id="ftab-team" onclick="showFantasyTab('team')">🏎️ Il Mio Team</button>
+        <button class="btn btn-g btn-sm" id="ftab-market" onclick="showFantasyTab('market')">🛒 Mercato</button>
+        <button class="btn btn-g btn-sm" id="ftab-buste" onclick="showFantasyTab('buste')"
+          style="border-color:rgba(255,165,0,.4);color:#ffaa44">📬 Buste</button>
+      </div>
+      <div id="fantasy-content"></div>
+      <div id="fantasy-market" class="hidden"></div>
+      <div id="fantasy-buste" class="hidden"></div>
+    </div>
+
+    <div class="page" id="pg-predict">
+      <div id="predict-content"></div>
+    </div>
+
+    <div class="page" id="pg-live">
+
+      <!-- ── SELETTORE GARA ── -->
+      <div id="live-race-selector" style="margin-bottom:12px">
+        <div style="font-size:9px;letter-spacing:2px;color:var(--t3);text-transform:uppercase;margin-bottom:6px">
+          Seleziona Gara</div>
+        <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;-webkit-overflow-scrolling:touch"
+          id="race-selector-scroll">
+          <!-- Popolato da JS -->
+        </div>
+      </div>
+
+      <!-- ── HEADER LIVE ── -->
+      <div class="livehdr" id="live-header-block">
+        <div class="livebar">
+          <div class="livebadge offline" id="livebadge-el">⬤ OFFLINE</div>
+          <div class="stsbadge stsG" id="trkstatus">⏳ In attesa...</div>
+          <div style="margin-left:auto;font-size:10px;color:var(--t3)">⟳ <span id="sync-time">--:--</span></div>
+        </div>
+        <div style="font-family:'Exo 2',sans-serif;font-weight:900;font-size:36px;line-height:1">
+          Giro <span id="lapcur">—</span><span style="font-size:18px;color:var(--t2);font-weight:400">/<span
+              id="laptot">—</span></span>
+        </div>
+        <div style="font-size:11px;color:var(--t2);margin-top:2px" id="live-racename">Seleziona una gara</div>
+        <div class="livcells">
+          <div class="livcell">
+            <div class="livcell-v" id="lv-dnf">0</div>
+            <div class="livcell-l">Ritiri</div>
+          </div>
+          <div class="livcell">
+            <div class="livcell-v" id="lv-sc" style="color:var(--yellow)">0</div>
+            <div class="livcell-l">Safety Car</div>
+          </div>
+          <div class="livcell">
+            <div class="livcell-v" id="lv-rf" style="color:var(--red)">0</div>
+            <div class="livcell-l">Red Flag</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB SESSIONI ── -->
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        <button class="btn btn-sm btn-r" id="ltab-pos" onclick="setLiveTab('pos')">🔴 Live</button>
+        <button class="btn btn-sm btn-g" id="ltab-fanta" onclick="setLiveTab('fanta')">🏆 Fanta</button>
+        <button class="btn btn-sm btn-g" id="ltab-gaps" onclick="setLiveTab('gaps')">⏱️ Gaps</button>
+        <button class="btn btn-sm btn-g" id="ltab-quali" onclick="setLiveTab('quali')"
+          style="border-color:var(--green);color:var(--green)">🏁 Qualifiche</button>
+        <button class="btn btn-sm btn-g" id="ltab-race" onclick="setLiveTab('race')"
+          style="border-color:var(--yellow);color:var(--yellow)">🏎️ Gara</button>
+        <button class="btn btn-sm btn-g hidden" id="ltab-sprint" onclick="setLiveTab('sprint')"
+          style="border-color:var(--purple);color:var(--purple)">🟣 Sprint</button>
+      </div>
+
+      <!-- ── TAB CONTENT ── -->
+      <div id="live-pos-tab">
+        <div class="stitle">🔴 Posizioni Live</div>
+        <div id="live-pos">
+          <div style="text-align:center;padding:24px;color:var(--t3);font-size:12px">📡 Nessun dato live.<br><span
+              style="font-size:11px">Seleziona una gara e attendi la sessione.</span></div>
+        </div>
+      </div>
+      <div id="live-fanta-tab" class="hidden">
+        <div class="stitle">🏆 Fanta Classifica Live</div>
+        <div id="live-fanta"></div>
+      </div>
+      <div id="live-gaps-tab" class="hidden">
+        <div class="stitle">⏱️ Intervalli</div>
+        <div id="live-gaps"></div>
+      </div>
+      <div id="live-quali-tab" class="hidden">
+        <div class="stitle">🏁 Risultati Qualifiche</div>
+        <div id="live-quali">
+          <div style="color:var(--t3);text-align:center;padding:16px;font-size:12px">Qualifiche non ancora disponibili
+          </div>
+        </div>
+      </div>
+      <div id="live-race-tab" class="hidden">
+        <div class="stitle">🏎️ Risultati Gara</div>
+        <div id="live-race-res">
+          <div style="color:var(--t3);text-align:center;padding:16px;font-size:12px">Risultati gara non ancora
+            disponibili</div>
+        </div>
+      </div>
+      <div id="live-sprint-tab" class="hidden">
+        <div class="stitle">🟣 Risultati Sprint</div>
+        <div id="live-sprint-res">
+          <div style="color:var(--t3);text-align:center;padding:16px;font-size:12px">Sprint non disponibile</div>
+        </div>
+      </div>
+
+      <div
+        style="margin-top:10px;padding:9px;background:var(--s2);border-radius:8px;font-size:10px;color:var(--t3);text-align:center;border:1px solid var(--border)">
+        📡 <strong style="color:var(--t2)">F1 LiveTiming + Jolpica</strong> · ogni 5s<br>
+        <span id="api-state">In attesa di selezione gara...</span>
+      </div>
+    </div>
+
+    <div class="page" id="pg-stand">
+      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+        <button class="btn btn-r btn-sm" id="stab-gen" onclick="showStab('gen')">🏆 Generale</button>
+        <button class="btn btn-g btn-sm" id="stab-gp" onclick="showStab('gp')">🏁 Per GP</button>
+        <button class="btn btn-g btn-sm" id="stab-pred" onclick="showStab('pred')">🔮 Pronostici</button>
+        <button class="btn btn-g btn-sm" id="stab-cal" onclick="showStab('cal')">📅 Calendario</button>
+      </div>
+      <div id="stand-content"></div>
+    </div>
+
+    <div class="page" id="pg-admin">
+      <div class="stitle">⚙️ Pannello Admin</div>
+      <div class="agrid">
+        <div class="atile" onclick="openMod('scores')">
+          <div class="atile-ico">🧮</div>
+          <div class="atile-lbl">Punteggi</div>
+        </div>
+        <div class="atile" onclick="openMod('users')">
+          <div class="atile-ico">👥</div>
+          <div class="atile-lbl">Utenti</div>
+        </div>
+        <div class="atile" onclick="openMod('results')">
+          <div class="atile-ico">🔄</div>
+          <div class="atile-lbl">Risultati GP</div>
+        </div>
+        <div class="atile" onclick="openMod('prices')">
+          <div class="atile-ico">💰</div>
+          <div class="atile-lbl">Prezzi</div>
+        </div>
+        <div class="atile" onclick="openMod('calcola')"
+          style="border-color:var(--red);background:linear-gradient(135deg,#1a0000,var(--s1))">
+          <div class="atile-ico">🤖</div>
+          <div class="atile-lbl" style="color:var(--red)">Calcola GP</div>
+        </div>
+        <div class="atile" onclick="openMod('auction')"
+          style="border-color:var(--gold);background:linear-gradient(135deg,#1a1200,var(--s1))">
+          <div class="atile-ico">🔨</div>
+          <div class="atile-lbl" style="color:var(--gold)">Asta Live</div>
+        </div>
+        <div class="atile" onclick="openMod('economy')"
+          style="border-color:var(--green);background:linear-gradient(135deg,#001a0a,var(--s1))">
+          <div class="atile-ico">💰</div>
+          <div class="atile-lbl" style="color:var(--green)">Economia GP</div>
+        </div>
+      </div>
+      <div class="status-banner sb-info">ℹ️ Codice lega: <strong id="admin-code">—</strong> · Budget asta:
+        <strong>300cr</strong>
+      </div>
+      <div class="status-banner sb-warn">⚠️ Disabilita "Confirm email" in Supabase → Authentication per registrazioni
+        istantanee</div>
+      <details style="margin-bottom:10px">
+        <summary
+          style="cursor:pointer;font-size:11px;font-weight:700;color:var(--yellow);padding:8px;background:var(--s2);border-radius:8px;border:1px solid var(--border)">
+          📋 SQL Supabase — Tabelle necessarie</summary>
+        <div class="code-block" style="margin-top:6px;font-size:10px">-- INCOLLA NEL SQL EDITOR DI SUPABASE
+
+          create table profiles (
+          id uuid primary key references auth.users(id),
+          nickname text unique not null,
+          role text default 'user',
+          avatar text default '🏎️',
+          color text default '#E10600',
+          total_pts integer default 0,
+          gps_done integer default 0,
+          best_result text default null
+          );
+
+          create table fantasy_teams (
+          id uuid primary key default gen_random_uuid(),
+          user_id uuid references profiles(id),
+          race_id text not null,
+          driver1 text, driver2 text, driver3 text,
+          team1 text, team2 text,
+          budget_used integer default 0,
+          saved_at timestamptz default now(),
+          unique(user_id, race_id)
+          );
+
+          -- AGGIUNGI SE TABELLA GIÀ ESISTE:
+          -- alter table fantasy_teams add column if not exists team1 text;
+          -- alter table fantasy_teams add column if not exists team2 text;
+
+          create table predictions (
+          id uuid primary key default gen_random_uuid(),
+          user_id uuid references profiles(id),
+          race_id text not null,
+          pole text, p1 text, p2 text, p3 text,
+          p4 text, p5 text,
+          fila1 text, fila2 text,
+          top6 text, top7 text, top8 text, top9 text, top10 text,
+          fastest text,
+          fastest_lap text,
+          fastest_pit_team text,
+          best_comeback text,
+          sc_count integer default 0,
+          sc_yn boolean,
+          rf_yn boolean,
+          retires integer default 0,
+          first_dnf text,
+          team_double text,
+          sprint_win text,
+          sprint_p2 text,
+          sprint_p3 text,
+          grid_best text,
+          constructor_best text,
+          saved_at timestamptz default now(),
+          unique(user_id, race_id)
+          );
+          -- Migration: add missing columns if upgrading from old schema
+          alter table predictions add column if not exists fila1 text;
+          alter table predictions add column if not exists fila2 text;
+          alter table predictions add column if not exists top6 text;
+          alter table predictions add column if not exists top7 text;
+          alter table predictions add column if not exists top8 text;
+          alter table predictions add column if not exists top9 text;
+          alter table predictions add column if not exists top10 text;
+          alter table predictions add column if not exists fastest_lap text;
+          alter table predictions add column if not exists fastest_pit_team text;
+          alter table predictions add column if not exists best_comeback text;
+          alter table predictions add column if not exists sc_yn boolean;
+          alter table predictions add column if not exists rf_yn boolean;
+          alter table predictions add column if not exists retires integer default 0;
+          alter table predictions add column if not exists sprint_p2 text;
+          alter table predictions add column if not exists sprint_p3 text;
+          alter table predictions add column if not exists grid_best text;
+          alter table predictions add column if not exists constructor_best text;
+          alter table predictions add column if not exists first_dnf text;
+          alter table predictions add column if not exists sprint_win text;
+
+          create table race_results (
+          race_id text primary key,
+          pole text, p1 text, p2 text, p3 text,
+          p4 text, p5 text, p6 text, p7 text, p8 text, p9 text, p10 text,
+          fastest text, dotd text,
+          sc_count integer default 0,
+          rf boolean default false,
+          dnf_drivers text default '',
+          dnq_drivers text default '',
+          dsq_drivers text default '',
+          penalty_drivers text default '',
+          retires_count integer default 0,
+          first_dnf text,
+          sprint_win text, sprint_p2 text, sprint_p3 text, sprint_fastest text,
+          fastest_pit_team text,
+          best_comeback text,
+          best_result text default null,
+          best_weekend_driver text default null,
+          constructor_best text default null,
+          p2_qual text,
+          qual_p1 text, qual_p2 text, qual_p3 text, qual_p4 text, qual_p5 text,
+          qual_p6 text, qual_p7 text, qual_p8 text, qual_p9 text, qual_p10 text,
+          q2_drivers text default '',
+          grid_positions jsonb default '{}',
+          overtakes jsonb default '{}',
+          pit_times jsonb default '{}',
+          pit_lane_start text default '',
+          sprint_order boolean default false,
+          sprint_grid jsonb default '{}',
+          sprint_overtakes jsonb default '{}',
+          sprint_dnf_drivers text default '',
+          openf1_session_key integer,
+          source text default 'manual',
+          fetched_at timestamptz default now()
+          );
+          -- Migration: add missing columns if upgrading from old schema
+          alter table race_results add column if not exists dotd text;
+          alter table race_results add column if not exists dnq_drivers text default '';
+          alter table race_results add column if not exists dsq_drivers text default '';
+          alter table race_results add column if not exists sprint_p2 text;
+          alter table race_results add column if not exists sprint_p3 text;
+          alter table race_results add column if not exists sprint_fastest text;
+          alter table race_results add column if not exists fastest_pit_team text;
+          alter table race_results add column if not exists best_comeback text;
+          alter table race_results add column if not exists best_weekend_driver text;
+          alter table race_results add column if not exists best_result text;
+          alter table race_results add column if not exists constructor_best text;
+          alter table race_results add column if not exists p2_qual text;
+          alter table race_results add column if not exists qual_p1 text;
+          alter table race_results add column if not exists qual_p2 text;
+          alter table race_results add column if not exists qual_p3 text;
+          alter table race_results add column if not exists qual_p4 text;
+          alter table race_results add column if not exists qual_p5 text;
+          alter table race_results add column if not exists qual_p6 text;
+          alter table race_results add column if not exists qual_p7 text;
+          alter table race_results add column if not exists qual_p8 text;
+          alter table race_results add column if not exists qual_p9 text;
+          alter table race_results add column if not exists qual_p10 text;
+          alter table race_results add column if not exists q2_drivers text default '';
+          alter table race_results add column if not exists grid_positions jsonb default '{}';
+          alter table race_results add column if not exists overtakes jsonb default '{}';
+          alter table race_results add column if not exists pit_times jsonb default '{}';
+          alter table race_results add column if not exists pit_lane_start text default '';
+          alter table race_results add column if not exists sprint_order boolean default false;
+          alter table race_results add column if not exists sprint_grid jsonb default '{}';
+          alter table race_results add column if not exists sprint_overtakes jsonb default '{}';
+          alter table race_results add column if not exists sprint_dnf_drivers text default '';
+          alter table race_results add column if not exists gap_data jsonb default '{}';
+
+          create table driver_prices (
+          driver_name text primary key,
+          price integer not null,
+          updated_at timestamptz default now()
+          );
+
+          create table gp_scores (
+          id uuid primary key default gen_random_uuid(),
+          user_id uuid references profiles(id),
+          race_id text not null,
+          fantasy_pts integer default 0,
+          predict_pts integer default 0,
+          total_pts integer default 0,
+          breakdown jsonb default '{}',
+          computed_at timestamptz default now(),
+          unique(user_id, race_id)
+          );
+
+          create table admin_log (
+          id uuid primary key default gen_random_uuid(),
+          action text, by_user text,
+          ts timestamptz default now()
+          );
+
+          -- RLS
+          alter table profiles enable row level security;
+          alter table fantasy_teams enable row level security;
+          alter table predictions enable row level security;
+          alter table race_results enable row level security;
+          alter table driver_prices enable row level security;
+          alter table gp_scores enable row level security;
+          alter table admin_log enable row level security;
+
+          create policy "read profiles" on profiles for select using (true);
+          create policy "insert own profile" on profiles for insert with check (auth.uid() = id);
+          create policy "update own profile" on profiles for update using (auth.uid() = id);
+          create policy "read fantasy" on fantasy_teams for select using (true);
+          create policy "manage own fantasy" on fantasy_teams for all using (auth.uid() = user_id);
+          create policy "read predictions" on predictions for select using (true);
+          create policy "manage own predictions" on predictions for all using (auth.uid() = user_id);
+          create policy "read results" on race_results for select using (true);
+          create policy "admin manage results" on race_results for all using (true) with check (true);
+          create policy "read prices" on driver_prices for select using (true);
+          create policy "admin manage prices" on driver_prices for all using (true) with check (true);
+          create policy "read gp_scores" on gp_scores for select using (true);
+          create policy "admin manage gp_scores" on gp_scores for all using (true) with check (true);
+          create policy "admin log" on admin_log for all using (true) with check (true);
+
+          create or replace function increment_pts(uid uuid, add_pts int, add_gps int)
+          returns void language sql as $$
+          update profiles set total_pts = total_pts + add_pts, gps_done = gps_done + add_gps where id = uid;
+          $$;
+
+          -- ASTA LIVE
+          create table auction_state (
+          id integer primary key default 1,
+          market_open boolean default false,
+          active_lot uuid,
+          updated_at timestamptz default now()
+          );
+          insert into auction_state (id, market_open) values (1, false) on conflict do nothing;
+
+          create table auction_lots (
+          id uuid primary key default gen_random_uuid(),
+          item_type text not null, -- 'driver' o 'team'
+          item_name text not null,
+          base_price integer default 1,
+          current_bid integer default 1,
+          current_bidder uuid references profiles(id),
+          winner_id uuid references profiles(id),
+          final_price integer,
+          status text default 'active', -- 'active','sold','unsold'
+          created_at timestamptz default now(),
+          updated_at timestamptz default now(),
+          closed_at timestamptz
+          );
+
+          alter table auction_state enable row level security;
+          alter table auction_lots enable row level security;
+          create policy "read auction_state" on auction_state for select using (true);
+          create policy "admin auction_state" on auction_state for all using (true) with check (true);
+          create policy "read auction_lots" on auction_lots for select using (true);
+          create policy "admin auction_lots" on auction_lots for all using (true) with check (true);
+
+          -- AGGIUNGI A fantasy_teams SE GIÀ ESISTE:
+          -- alter table fantasy_teams add column if not exists team1 text;
+          -- alter table fantasy_teams add column if not exists team2 text;
+
+          -- POWER-UP SHOP:
+          create table if not exists powerup_purchases (
+          id uuid primary key default gen_random_uuid(),
+          user_id uuid references profiles(id),
+          race_id text not null,
+          powerup_id text not null,
+          cost integer not null,
+          activated boolean default false,
+          created_at timestamptz default now(),
+          unique(user_id, race_id, powerup_id)
+          );
+          alter table powerup_purchases enable row level security;
+          create policy "read pp" on powerup_purchases for select using (true);
+          create policy "manage pp" on powerup_purchases for all using (true) with check (true);
+
+          -- MERCATO BUSTE (buste giornaliere, offerte con promessa di svincolo)
+          create table if not exists envelope_market (
+          id uuid primary key default gen_random_uuid(),
+          item_type text not null, -- 'driver' o 'team'
+          item_name text not null, -- nome pilota/scuderia
+          open_from timestamptz not null, -- inizio finestra offerte (ore 8)
+          open_until timestamptz not null,-- fine finestra offerte (ore 18)
+          status text default 'open', -- 'open','closed','awarded'
+          winner_id uuid references profiles(id),
+          awarded_at timestamptz,
+          created_at timestamptz default now()
+          );
+          alter table envelope_market enable row level security;
+          create policy "read envelopes" on envelope_market for select using (true);
+          create policy "admin envelopes" on envelope_market for all using (true) with check (true);
+
+          -- OFFERTE BUSTE (ogni utente fa una sola offerta per busta)
+          create table if not exists envelope_offers (
+          id uuid primary key default gen_random_uuid(),
+          envelope_id uuid references envelope_market(id),
+          user_id uuid references profiles(id),
+          pledge_item text, -- pilota/scuderia che offre come svincolo
+          pledge_item_type text, -- 'driver' o 'team'
+          pledge_value integer default 0, -- valore di mercato attuale al momento dell'offerta
+          extra_credits integer default 0,-- crediti aggiuntivi offerti (opzionale)
+          total_value integer default 0, -- pledge_value + extra_credits
+          status text default 'pending', -- 'pending','won','lost','cancelled'
+          created_at timestamptz default now(),
+          unique(envelope_id, user_id)
+          );
+          alter table envelope_offers enable row level security;
+          create policy "read env_offers" on envelope_offers for select using (true);
+          create policy "manage env_offers" on envelope_offers for all using (true) with check (true);</div>
+      </details>
+      <div class="status-banner sb-info" style="margin:10px 0 6px;font-size:11px">
+        ℹ️ <strong>Persistenza dati:</strong> Tutti i punteggi, team, pronostici, crediti e power-up sono salvati su
+        <strong>Supabase</strong> e sopravvivono a qualsiasi aggiornamento del codice. Aggiornare il file HTML non
+        cancella mai i dati.
+      </div>
+      <div class="stitle">📋 Log Attività</div>
+      <div id="adminlog"></div>
+      <button class="btn btn-g btn-sm" onclick="navTo('home')" style="margin-top:12px">← Home</button>
+    </div>
+
+    <div class="page" id="pg-profile">
+      <div class="phdr">
+        <div class="pav" id="pav" style="cursor:pointer" onclick="openEditProfile()" title="Cambia avatar">?</div>
+        <div class="pname" id="pname">—</div>
+        <div class="prole" id="prole">Pilota</div>
+        <button class="btn btn-g btn-sm" style="margin-top:10px" onclick="openEditProfile()">✏️ Modifica
+          Profilo</button>
+      </div>
+      <div class="card">
+        <div class="ctitle" style="margin-bottom:11px">📊 Le Mie Statistiche</div>
+        <div id="pstats"></div>
+      </div>
+      <div class="card" style="border-color:rgba(255,215,0,.2)">
+        <div class="ctitle" style="margin-bottom:11px">⚡ I Miei Power-Up</div>
+        <div id="pu-profile-box">
+          <div style="color:var(--t3);font-size:12px">Caricamento...</div>
+        </div>
+      </div>
+      <div id="padmin-btn"></div>
+      <div class="stitle">📜 Storico GP</div>
+      <div id="phist"></div>
+      <button class="btn btn-g btn-w" onclick="doLogout()" style="margin-top:14px">🚪 Esci</button>
+    </div>
+
+    <nav class="bnav">
+      <button class="ni on" id="ni-home" onclick="navTo('home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>Home
+      </button>
+      <button class="ni" id="ni-fantasy" onclick="navTo('fantasy')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+        </svg>Team
+      </button>
+      <button class="ni" id="ni-predict" onclick="navTo('predict')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg>Pronostico
+      </button>
+      <button class="ni" id="ni-live" onclick="navTo('live')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" />
+        </svg>Live
+      </button>
+      <button class="ni" id="ni-stand" onclick="navTo('stand')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
+        </svg>Classifica
+      </button>
+      <button class="ni" id="ni-rules" onclick="navTo('rules')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <polyline points="10 9 9 9 8 9" />
+        </svg>Regole
+      </button>
+      <button class="ni" id="ni-profile" onclick="navTo('profile')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>Profilo
+      </button>
+    </nav>
+
+    <!-- PAGINA REGOLE -->
+    <div class="page" id="pg-rules">
+      <div style="font-family:'Exo 2',sans-serif;font-weight:900;font-size:28px;letter-spacing:-1px;margin-bottom:4px">
+        📋 REGOLAMENTO</div>
+      <div style="font-size:10px;color:var(--t3);letter-spacing:3px;text-transform:uppercase;margin-bottom:16px">Fanta
+        F1 2026</div>
+
+      <div class="card">
+        <div class="psectit">💰 Budget & Asta</div>
+        <div style="font-size:13px;line-height:1.7;color:var(--t2)">
+          Ogni partecipante dispone di <strong style="color:var(--gold)">300 crediti</strong> per l'asta iniziale.<br>
+          L'asta è live: l'admin apre i lotti uno alla volta, tutti fanno offerte dal telefono.<br>
+          <strong style="color:var(--t1)">Solo l'admin assegna</strong> il pilota/scuderia al miglior offerente.<br>
+          Ogni squadra deve avere <strong style="color:var(--t1)">2 piloti + 1 scuderia</strong>.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="psectit">💸 Stipendi & Guadagni Crediti per GP</div>
+        <div style="font-size:13px;line-height:1.6;color:var(--t2)">
+          Ogni weekend paghi lo <strong style="color:#ff9090">stipendio</strong> dei tuoi piloti e della scuderia, e
+          guadagni crediti dai risultati:<br>
+          <div
+            style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px;font-size:11px;text-align:center">
+            <div style="background:var(--s2);border-radius:6px;padding:6px">
+              <div style="color:var(--yellow);font-weight:900">🥇 P1</div>
+              <div style="color:var(--green)">+32 cr</div>
+              <div style="color:var(--t2)">25 pts</div>
+            </div>
+            <div style="background:var(--s2);border-radius:6px;padding:6px">
+              <div style="color:#ccc;font-weight:900">🥈 P2</div>
+              <div style="color:var(--green)">+30 cr</div>
+              <div style="color:var(--t2)">18 pts</div>
+            </div>
+            <div style="background:var(--s2);border-radius:6px;padding:6px">
+              <div style="color:#cd7f32;font-weight:900">🥉 P3</div>
+              <div style="color:var(--green)">+28 cr</div>
+              <div style="color:var(--t2)">15 pts</div>
+            </div>
+            <div style="background:var(--s2);border-radius:6px;padding:6px">
+              <div style="color:var(--t2);font-weight:900">P4</div>
+              <div style="color:var(--green)">+26 cr</div>
+              <div style="color:var(--t2)">12 pts</div>
+            </div>
+            <div style="background:var(--s2);border-radius:6px;padding:6px">
+              <div style="color:var(--t2);font-weight:900">P5</div>
+              <div style="color:var(--green)">+25 cr</div>
+              <div style="color:var(--t2)">10 pts</div>
+            </div>
+            <div style="background:var(--s2);border-radius:6px;padding:6px">
+              <div style="color:var(--t2);font-weight:900">P6</div>
+              <div style="color:var(--green)">+24 cr</div>
+              <div style="color:var(--t2)">8 pts</div>
+            </div>
+            <div style="background:var(--s2);border-radius:6px;padding:6px">
+              <div style="color:var(--t3);font-weight:900">P7</div>
+              <div style="color:var(--green)">+23 cr</div>
+              <div style="color:var(--t2)">6 pts</div>
+            </div>
+            <div style="background:var(--s2);border-radius:6px;padding:6px">
+              <div style="color:var(--t3);font-weight:900">P8</div>
+              <div style="color:var(--green)">+22 cr</div>
+              <div style="color:var(--t2)">4 pts</div>
+            </div>
+            <div style="background:var(--s2);border-radius:6px;padding:6px">
+              <div style="color:var(--t3);font-weight:900">P9</div>
+              <div style="color:var(--green)">+21 cr</div>
+              <div style="color:var(--t2)">2 pts</div>
+            </div>
+            <div style="background:var(--s2);border-radius:6px;padding:6px">
+              <div style="color:var(--t3);font-weight:900">P10</div>
+              <div style="color:var(--green)">+20 cr</div>
+              <div style="color:var(--t2)">1 pt</div>
+            </div>
+            <div style="background:var(--s2);border-radius:6px;padding:6px">
+              <div style="color:var(--t3);font-weight:900">P11-15</div>
+              <div style="color:var(--green)">+19→15 cr</div>
+              <div style="color:var(--t2)">0 pts</div>
+            </div>
+            <div style="background:var(--s2);border-radius:6px;padding:6px">
+              <div style="color:var(--t3);font-weight:900">P16+</div>
+              <div style="color:var(--t3)">0 cr</div>
+              <div style="color:var(--t2)">0 pts</div>
+            </div>
+          </div>
+          <div
+            style="margin-top:8px;font-size:11px;padding:7px;background:#0a1a00;border-radius:6px;border:1px solid #1a3a10;color:#88cc88">
+            ✅ Podio = crediti extra: pilota sul podio +12 cr aggiuntivi
+          </div>
+          <div
+            style="margin-top:5px;font-size:11px;padding:7px;background:#1a0000;border-radius:6px;border:1px solid #3a1010;color:#ff9090">
+            ⚠️ DNF → −10 pts e −10 cr · Squalifica → −20 pts · Penalità → −8 pts
+          </div>
+          <div
+            style="margin-top:5px;font-size:11px;padding:7px;background:#1a1a00;border-radius:6px;border:1px solid #3a3a10;color:#cccc88">
+            🏁 Scuderia: ogni pilota top10 → +5 pts +5 cr · Posizioni guadagnate: +1 pt/pos · Perse: −1 pt/pos
+          </div>
+        </div>
+      </div>
+
+      <!-- VARIAZIONE VALORI: PILOTI per fascia -->
+      <div class="card" style="border-color:rgba(255,150,0,.2)">
+        <div class="psectit">📈 Variazione Valori di Mercato</div>
+        <div style="font-size:12px;line-height:1.6;color:var(--t2);margin-bottom:10px">
+          Dopo ogni GP il <strong style="color:var(--t1)">valore di mercato</strong> si aggiorna automaticamente in base
+          alla fascia.<br>
+          💥 <strong style="color:var(--red)">DNF = sempre −2</strong> indipendentemente dalla fascia.
+        </div>
+
+        <!-- PILOTI: 3 fasce -->
+        <div
+          style="font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:8px;font-weight:900">
+          👤 Piloti</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:10px">
+          <!-- TOP -->
+          <div style="background:var(--s2);border-radius:10px;padding:10px;border:1px solid rgba(255,215,0,.15)">
+            <div style="font-weight:900;font-size:11px;color:var(--gold);margin-bottom:6px">🥇 TOP</div>
+            <div style="font-size:9px;color:var(--t3);margin-bottom:5px">Russell · Norris · Verstappen · Leclerc ·
+              Antonelli · Piastri · Hamilton · Hadjar</div>
+            <div style="font-size:9px;color:var(--t3);margin-bottom:4px;font-style:italic">Aspettativa: podio/top5</div>
+            <div style="font-size:10px;line-height:1.8">
+              <span style="color:var(--green)">P1 +3 · P2 +2 · P3 +2</span><br>
+              <span style="color:var(--green)">P4 +1 · P5-7 =0</span><br>
+              <span style="color:#ff9090">P8 -1 · P9 -1 · P10 -2</span><br>
+              <span style="color:#ff6060">P11-13 -3 · P14 -3</span><br>
+              <span style="color:#ff4040">P15-17 -4 · P18-22 -5</span>
+            </div>
+          </div>
+          <!-- MEDIA -->
+          <div style="background:var(--s2);border-radius:10px;padding:10px;border:1px solid rgba(100,196,255,.15)">
+            <div style="font-weight:900;font-size:11px;color:#64c4ff;margin-bottom:6px">🥈 MEDIA</div>
+            <div style="font-size:9px;color:var(--t3);margin-bottom:5px">Gasly · Bearman · Sainz · Albon · Ocon · Lawson
+              · Colapinto</div>
+            <div style="font-size:9px;color:var(--t3);margin-bottom:4px;font-style:italic">Aspettativa: top10</div>
+            <div style="font-size:10px;line-height:1.8">
+              <span style="color:var(--green)">P1 +5 · P2 +4 · P3 +4</span><br>
+              <span style="color:var(--green)">P4 +4 · P5 +3 · P6 +2</span><br>
+              <span style="color:var(--green)">P7 +2 · P8 +1 · P9-14 =0</span><br>
+              <span style="color:#ff9090">P15 -1 · P16 -1 · P17-18 -2</span><br>
+              <span style="color:#ff4040">P19-20 -3 · P21-22 -4</span>
+            </div>
+          </div>
+          <!-- BASSA -->
+          <div style="background:var(--s2);border-radius:10px;padding:10px;border:1px solid rgba(82,226,82,.15)">
+            <div style="font-weight:900;font-size:11px;color:var(--green);margin-bottom:6px">🥉 BASSA</div>
+            <div style="font-size:9px;color:var(--t3);margin-bottom:5px">Alonso · Bortoleto · Hülkenberg · Lindblad ·
+              Stroll · Pérez · Bottas</div>
+            <div style="font-size:9px;color:var(--t3);margin-bottom:4px;font-style:italic">Aspettativa: punti</div>
+            <div style="font-size:10px;line-height:1.8">
+              <span style="color:var(--green)">P1 +7 · P2 +7 · P3 +6</span><br>
+              <span style="color:var(--green)">P4 +6 · P5 +5 · P6 +5</span><br>
+              <span style="color:var(--green)">P7 +4 · P8 +4 · P9 +3</span><br>
+              <span style="color:var(--green)">P10 +2 · P11-13 +1 · P14-19 =0</span><br>
+              <span style="color:#ff9090">P20-22 -1</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SCUDERIE -->
+        <div
+          style="font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin:12px 0 8px;font-weight:900">
+          🏎️ Scuderie — Classifica Costruttori Weekend</div>
+        <div style="font-size:11px;color:var(--t2);margin-bottom:8px">
+          La posizione si calcola come nella <strong>F1 reale</strong>: somma dei punti dei 2 piloti in gara.
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px">
+          <div style="background:var(--s2);border-radius:10px;padding:10px;border:1px solid rgba(255,215,0,.15)">
+            <div style="font-weight:900;font-size:11px;color:var(--gold);margin-bottom:5px">🥇 TOP</div>
+            <div style="font-size:9px;color:var(--t3);margin-bottom:5px">Mercedes · McLaren · Ferrari · Red Bull</div>
+            <div style="font-size:10px;line-height:1.8">
+              <span style="color:var(--green)">1° +2 · 2° +2 · 3° +1</span><br>
+              <span style="color:var(--t3)">4° =0</span><br>
+              <span style="color:#ff9090">5° -1 · 6° -2 · 7° -3</span><br>
+              <span style="color:#ff4040">8-11° -3</span>
+            </div>
+          </div>
+          <div style="background:var(--s2);border-radius:10px;padding:10px;border:1px solid rgba(100,196,255,.15)">
+            <div style="font-weight:900;font-size:11px;color:#64c4ff;margin-bottom:5px">🥈 MEDIA</div>
+            <div style="font-size:9px;color:var(--t3);margin-bottom:5px">Alpine · Haas · Williams</div>
+            <div style="font-size:10px;line-height:1.8">
+              <span style="color:var(--green)">1° +4 · 2° +3 · 3° +2</span><br>
+              <span style="color:var(--green)">4° +2 · 5° +1</span><br>
+              <span style="color:var(--t3)">6-8° =0</span><br>
+              <span style="color:#ff9090">9° -1 · 10-11° -2</span>
+            </div>
+          </div>
+          <div style="background:var(--s2);border-radius:10px;padding:10px;border:1px solid rgba(82,226,82,.15)">
+            <div style="font-weight:900;font-size:11px;color:var(--green);margin-bottom:5px">🥉 BASSA</div>
+            <div style="font-size:9px;color:var(--t3);margin-bottom:5px">Audi · Aston Martin · Cadillac · Racing Bulls
+            </div>
+            <div style="font-size:10px;line-height:1.8">
+              <span style="color:var(--green)">1° +5 · 2° +4 · 3° +4</span><br>
+              <span style="color:var(--green)">4° +3 · 5° +2 · 6-8° +1</span><br>
+              <span style="color:var(--t3)">9-10° =0</span><br>
+              <span style="color:#ff9090">11° -1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRASFERIMENTI & MERCATO -->
+      <div class="card" style="border-color:rgba(192,96,255,.3)">
+        <div class="psectit">💱 Trasferimenti & Mercato</div>
+        <div style="font-size:12px;line-height:1.7;color:var(--t2)">
+          Quando l'admin <strong style="color:var(--purple)">apre il mercato</strong> puoi fare tre cose dalla sezione
+          <strong>Team → 💱 Trasferimenti</strong>:
+        </div>
+        <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+
+          <div style="background:var(--s2);border-radius:10px;padding:11px;border-left:3px solid var(--red)">
+            <div style="font-weight:900;font-size:12px;margin-bottom:4px">🔓 Svincolo</div>
+            <div style="font-size:11px;color:var(--t2)">Libera un tuo pilota o scuderia e ricevi il suo <strong
+                style="color:var(--gold)">valore di mercato attuale</strong> in crediti (non il prezzo pagato all'asta).
+              Il giocatore torna disponibile per l'asta.</div>
+          </div>
+
+          <div style="background:var(--s2);border-radius:10px;padding:11px;border-left:3px solid #64c4ff">
+            <div style="font-weight:900;font-size:12px;margin-bottom:4px">💰 Offerta di Acquisto</div>
+            <div style="font-size:11px;color:var(--t2)">Manda un'offerta privata a un altro giocatore: <em>"Ti do X
+                crediti per il tuo pilota/scuderia Y"</em>. L'altro può accettare o rifiutare.</div>
+          </div>
+
+          <div style="background:var(--s2);border-radius:10px;padding:11px;border-left:3px solid var(--green)">
+            <div style="font-weight:900;font-size:12px;margin-bottom:4px">🔄 Scambio</div>
+            <div style="font-size:11px;color:var(--t2)">Proponi uno scambio diretto: <em>"Ti do il mio X in cambio del
+                tuo Y"</em>, con eventuale conguaglio in crediti positivo (tu paghi) o negativo (l'altro paga).</div>
+          </div>
+
+          <div style="background:var(--s2);border-radius:10px;padding:11px;border-left:3px solid var(--gold)">
+            <div style="font-weight:900;font-size:12px;margin-bottom:4px">⛔ Limiti Asta</div>
+            <div style="font-size:11px;color:var(--t2)">Durante l'asta: se hai già <strong>2 piloti</strong> non puoi
+              offrire su altri piloti. Se hai già <strong>1 scuderia</strong> non puoi offrire su altre scuderie.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="psectit">🏎️ Punteggi Fantasy</div>
+        <div style="font-size:12px;color:var(--t2)">
+          <div class="srow"><span class="sl">🥇 Vittoria</span><span class="sv" style="color:var(--green)">+25
+              pts</span></div>
+          <div class="srow"><span class="sl">🥈 P2</span><span class="sv" style="color:var(--green)">+18 pts</span>
+          </div>
+          <div class="srow"><span class="sl">🥉 P3</span><span class="sv" style="color:var(--green)">+15 pts</span>
+          </div>
+          <div class="srow"><span class="sl">P4→P10</span><span class="sv" style="color:var(--green)">+12→1 pts</span>
+          </div>
+          <div class="srow"><span class="sl">⚡ Entrata Q2</span><span class="sv" style="color:var(--green)">+5 cr / +3
+              pts</span></div>
+          <div class="srow"><span class="sl">⚡ Entrata Q3</span><span class="sv" style="color:var(--green)">+10 cr / +5
+              pts</span></div>
+          <div class="srow"><span class="sl">⚡ Pole Position</span><span class="sv" style="color:var(--green)">+15 cr /
+              +7 pts</span></div>
+          <div class="srow"><span class="sl">🏁 Scuderia top10</span><span class="sv" style="color:var(--green)">+5 pts
+              +5 cr</span></div>
+          <div class="srow"><span class="sl">🔄 Pos guadagnata</span><span class="sv" style="color:var(--green)">+1 pt /
+              pos</span></div>
+          <div class="srow"><span class="sl">💥 DNF / Ritiro</span><span class="sv" style="color:var(--red)">−10 pts −10
+              cr</span></div>
+          <div class="srow"><span class="sl">🚫 Squalificato</span><span class="sv" style="color:var(--red)">−20
+              pts</span></div>
+          <div class="srow"><span class="sl">⚠️ Penalità</span><span class="sv" style="color:var(--red)">−8 pts</span>
+          </div>
+          <div class="srow"><span class="sl">⭐ Podio aggiuntivo</span><span class="sv" style="color:var(--green)">+12 cr
+              +5 pts</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="psectit">🟣 Sprint — Punteggi</div>
+        <div style="font-size:12px;color:var(--t2)">
+          <div class="srow"><span class="sl">P1</span><span class="sv" style="color:var(--purple)">+8 pts</span></div>
+          <div class="srow"><span class="sl">P2</span><span class="sv" style="color:var(--purple)">+7 pts</span></div>
+          <div class="srow"><span class="sl">P3</span><span class="sv" style="color:var(--purple)">+6 pts</span></div>
+          <div class="srow"><span class="sl">P4–P8</span><span class="sv" style="color:var(--purple)">+5→1 pts</span>
+          </div>
+          <div class="srow"><span class="sl">Pos guadagnata</span><span class="sv" style="color:var(--purple)">+1 pt /
+              pos</span></div>
+          <div class="srow"><span class="sl">DNF Sprint</span><span class="sv" style="color:var(--red)">−5 pts</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="psectit">🔮 Pronostici — Punteggi & Crediti</div>
+        <div style="font-size:12px;color:var(--t2)">
+          <div
+            style="background:rgba(225,6,0,.08);border:1px solid rgba(225,6,0,.25);border-radius:8px;padding:8px 10px;margin-bottom:10px;font-size:11px">
+            🔒 <strong style="color:var(--t1)">Deadline: inizio delle Qualifiche (Q1)</strong> — dopo non puoi più
+            modificare o inserire pronostici per quel GP. Per il GP successivo si riaprono automaticamente.
+          </div>
+          <div class="srow"><span class="sl">🥇 Vincitore esatto</span><span class="sv" style="color:var(--green)">+12
+              pts / +10 cr</span></div>
+          <div class="srow"><span class="sl">Sul podio (non P1)</span><span class="sv" style="color:var(--yellow)">+5
+              pts</span></div>
+          <div class="srow"><span class="sl">Podio pos esatta</span><span class="sv" style="color:var(--green)">+10 pts
+              / +8 cr</span></div>
+          <div class="srow"><span class="sl">Podio pos sbagliata</span><span class="sv" style="color:var(--yellow)">+4
+              pts / +4 cr</span></div>
+          <div class="srow"><span class="sl">Top10 (4-10) corretto</span><span class="sv" style="color:var(--green)">+3
+              pts / +2 cr</span></div>
+          <div class="srow"><span class="sl">Safety Car corretta</span><span class="sv" style="color:var(--green)">+5
+              pts / +5 cr</span></div>
+          <div class="srow"><span class="sl">Bandiera Rossa corretta</span><span class="sv"
+              style="color:var(--green)">+7 pts / +7 cr</span></div>
+          <div class="srow"><span class="sl">Prima scuderia pit</span><span class="sv" style="color:var(--green)">+6 pts
+              / +6 cr</span></div>
+          <div class="srow"><span class="sl">Giro veloce</span><span class="sv" style="color:var(--green)">+8 pts / +6
+              cr</span></div>
+          <div class="srow"><span class="sl">Miglior rimonta</span><span class="sv" style="color:var(--green)">+10 pts /
+              +8 cr</span></div>
+          <div class="srow"><span class="sl">Pole Position</span><span class="sv" style="color:var(--green)">+8 pts / +7
+              cr</span></div>
+          <div class="srow"><span class="sl">Costruttore top weekend</span><span class="sv"
+              style="color:var(--green)">+8 pts / +6 cr</span></div>
+          <div class="srow"><span class="sl">Ritiri esatti</span><span class="sv" style="color:var(--green)">+10 pts /
+              +10 cr</span></div>
+          <div class="srow"><span class="sl">Ritiri ±1</span><span class="sv" style="color:var(--yellow)">+5 pts / +5
+              cr</span></div>
+          <div
+            style="margin-top:8px;padding:7px;background:rgba(192,96,255,.05);border:1px solid rgba(192,96,255,.2);border-radius:7px;font-size:11px;color:var(--purple)">
+            🎯 <strong>Perfect Weekend</strong> (pole+podio+SC corretti) → <strong>+25 pts</strong><br>
+            🌟 <strong>Super Perfect</strong> (+ ritiri esatti) → <strong>+40 pts</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="border-color:rgba(255,215,0,.3)">
+        <div class="psectit">⚡ Power-Up Shop</div>
+        <div style="font-size:12px;color:var(--t2);margin-bottom:8px">
+          I Power-Up si acquistano con i <strong style="color:var(--gold)">crediti residui</strong> dall'asta, una volta
+          per GP. Si attivano automaticamente sul weekend scelto.
+        </div>
+        <div style="font-size:12px">
+          <div class="srow"><span class="sl">🛡️ Scudo Difensivo</span><span class="sv"
+              style="color:var(--pu-shield)">25 cr — Annulla tutti i malus fantasy</span></div>
+          <div class="srow"><span class="sl">💣 Doppia Posta</span><span class="sv" style="color:var(--pu-double)">30 cr
+              — Pronostici ×2</span></div>
+          <div class="srow"><span class="sl">⚡ Turbo Weekend</span><span class="sv" style="color:var(--pu-turbo)">35 cr
+              — Fantasy ×1.5</span></div>
+          <div class="srow"><span class="sl">🎯 Occhio di Falco</span><span class="sv" style="color:var(--pu-eye)">40 cr
+              — +5pts per pronostico esatto</span></div>
+          <div class="srow"><span class="sl">🔄 Jolly Scuderia</span><span class="sv" style="color:var(--pu-jolly)">25
+              cr — Punti scuderia ×2</span></div>
+        </div>
+      </div>
+
+      <div class="card" style="border-color:var(--gold)">
+        <div class="psectit" style="color:var(--gold)">🏆 Classifica Finale</div>
+        <div style="font-size:13px;line-height:1.7;color:var(--t2)">
+          Vince chi ha più <strong style="color:var(--gold)">punti totali</strong> a fine stagione (24 GP).<br>
+          I punti sono la somma di <strong>Fantasy + Pronostici</strong> per ogni gara.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="moverlay" class="moverlay hidden" onclick="if(event.target===this)closeMod()">
+    <div class="modal" id="mcontent"></div>
+  </div>
+  <div id="toasts"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/auction.js"></script>
+  <script src="js/fantasy.js"></script>
+  <script src="js/scoring.js"></script>
+  <script src="js/live.js"></script>
+  <script src="js/pages.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+
+</html>
